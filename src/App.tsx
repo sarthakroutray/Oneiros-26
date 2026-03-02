@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
 import Map from './components/Map';
@@ -29,6 +29,25 @@ export default function App() {
     sponsors: <Sponsors />,
     contact: <Contact />,
   };
+
+  // Hide 3D HUD / Joystick when navigating over-top pages to prevent interaction bleeding
+  useEffect(() => {
+    const joy = document.getElementById('joystick-zone');
+    const hud = document.getElementById('hud');
+    const stateEl = document.getElementById('state');
+    const hints = document.getElementById('mobile-hints');
+
+    const opacity = activePage ? '0' : '1';
+    const pointerEvents = activePage ? 'none' : 'auto';
+
+    [joy, hud, stateEl, hints].forEach(el => {
+      if (el) {
+        el.style.opacity = opacity;
+        el.style.pointerEvents = pointerEvents;
+        el.style.transition = 'opacity 0.2s ease';
+      }
+    });
+  }, [activePage]);
 
   return (
     // Root: fixed, full viewport, black background

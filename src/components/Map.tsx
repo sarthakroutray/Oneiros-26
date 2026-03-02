@@ -676,6 +676,9 @@ export default function Map() {
       const kbX = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
       const kbY = (keys.w ? 1 : 0) - (keys.s ? 1 : 0);
       const inputX = kbX !== 0 ? kbX : joyVec.x;
+      // joyVec.y is negative when pushed UP in CSS coords. 
+      // The movement engine expects positive inputY to move FORWARD.
+      // So pushing UP (joy.y = -1.0) should equal FORWARD (inputY = 1.0)
       const inputY = kbY !== 0 ? kbY : -joyVec.y;
       const moving = (inputX * inputX + inputY * inputY) > 0.0025;
 
