@@ -4,11 +4,13 @@ import preloaderVidDesktop from '../assets/intro_enhanced.webm';
 
 interface PreloaderProps {
     onComplete: () => void;
+    canComplete?: boolean;
 }
 
-export default function Preloader({ onComplete }: PreloaderProps) {
+export default function Preloader({ onComplete, canComplete = false }: PreloaderProps) {
     const [fadeOut, setFadeOut] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [introFinished, setIntroFinished] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     const handleComplete = useCallback(() => {
@@ -32,6 +34,10 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         }
     }, []);
 
+    const handleIntroFinished = useCallback(() => {
+        setIntroFinished(true);
+    }, []);
+
     useEffect(() => {
         if (videoRef.current) {
             videoRef.current.playbackRate = 1.2;
@@ -41,12 +47,19 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         }
 
         // Safety fallback timer in case 'onEnded' doesn't fire
-        const fallbackTimer = setTimeout(handleComplete, 15000);
+        const fallbackTimer = setTimeout(handleIntroFinished, 15000);
 
         return () => {
             clearTimeout(fallbackTimer);
         };
-    }, [handleComplete]);
+    }, [handleIntroFinished]);
+
+    useEffect(() => {
+        if (fadeOut) return;
+        if (introFinished && canComplete) {
+            handleComplete();
+        }
+    }, [introFinished, canComplete, fadeOut, handleComplete]);
 
     return (
         <div className={`preloader-container ${fadeOut ? 'fade-out' : ''}`}>
@@ -56,7 +69,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
                 muted
                 playsInline
                 preload="auto"
-                onEnded={handleComplete}
+                onEnded={handleIntroFinished}
                 onTimeUpdate={handleTimeUpdate}
                 className="preloader-video"
             >

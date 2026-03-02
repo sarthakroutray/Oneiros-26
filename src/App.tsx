@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
 import Map from './components/Map';
@@ -19,7 +19,12 @@ import Schedule from './components/Schedule';
  */
 export default function App() {
   const [preloaderDone, setPreloaderDone] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
   const [activePage, setActivePage] = useState<string | null>(null);
+
+  const handleSceneReady = useCallback(() => {
+    setSceneReady(true);
+  }, []);
 
   const pageComponents: Record<string, React.ReactNode> = {
     about: <About />,
@@ -56,7 +61,10 @@ export default function App() {
       {/* ── PRELOADER (video + progress bar) ─────────────────────────────── */}
       {/* Stays mounted until onComplete fires, then fades out and unmounts */}
       {!preloaderDone && (
-        <Preloader onComplete={() => setPreloaderDone(true)} />
+        <Preloader
+          canComplete={sceneReady}
+          onComplete={() => setPreloaderDone(true)}
+        />
       )}
 
       {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
@@ -65,7 +73,10 @@ export default function App() {
         Loads immediately in the background behind the z-index 999
         Preloader so WebGL shaders compile concurrently!
       */}
-      <Map />
+      <Map
+        onNavigate={(page) => setActivePage(page || null)}
+        onReady={handleSceneReady}
+      />
 
       {/* Page overlay — shown when a nav link is clicked */}
       {activePage && pageComponents[activePage] && (
