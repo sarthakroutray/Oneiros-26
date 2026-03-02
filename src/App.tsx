@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
-import Map from './components/Map';
 import About from './components/About';
 import Events from './components/Events';
 import Sponsors from './components/Sponsors';
 import Contact from './components/Contact';
 import Gallery from './components/Gallery';
 import Schedule from './components/Schedule';
+
+const loadMap = () => import('./components/Map');
+const Map = lazy(loadMap);
 
 /**
  * Rendering order (z-index stack):
@@ -20,6 +22,7 @@ import Schedule from './components/Schedule';
 export default function App() {
   const [preloaderDone, setPreloaderDone] = useState(false);
   const [activePage, setActivePage] = useState<string | null>(null);
+  const [sceneReady, setSceneReady] = useState(false);
 
   const pageComponents: Record<string, React.ReactNode> = {
     about: <About />,
@@ -30,6 +33,18 @@ export default function App() {
     contact: <Contact />,
   };
 
+  useEffect(() => {
+    if (preloaderDone) return;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) return;
+
+    const warmupTimer = window.setTimeout(() => {
+      void loadMap();
+    }, 180);
+
+    return () => window.clearTimeout(warmupTimer);
+  }, [preloaderDone]);
+
   return (
     // Root: fixed, full viewport, black background
     <div style={{ position: 'fixed', inset: 0, background: '#000' }}>
@@ -37,7 +52,10 @@ export default function App() {
       {/* ── PRELOADER (video + progress bar) ─────────────────────────────── */}
       {/* Stays mounted until onComplete fires, then fades out and unmounts */}
       {!preloaderDone && (
-        <Preloader onComplete={() => setPreloaderDone(true)} />
+        <Preloader
+          canComplete={sceneReady}
+          onComplete={() => setPreloaderDone(true)}
+        />
       )}
 
       {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
@@ -47,48 +65,57 @@ export default function App() {
         Preloader so WebGL shaders compile concurrently!
       */}
       <Map onNavigate={(page) => setActivePage(page)} />
+      {/* Map mounts early so assets load in background while preloader runs. */}
+      <Suspense fallback={null}>
+        <Map
+          showUi={preloaderDone}
+          onReady={() => setSceneReady(true)}
+        />
+      </Suspense>
 
-      {/* Page overlay — shown when a nav link is clicked */}
-      {activePage && pageComponents[activePage] && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 30,
-          background: 'rgba(0,0,0,0.92)',
-          overflowY: 'auto',
-        }}>
-          <button
-            onClick={() => setActivePage(null)}
-            style={{
+      {preloaderDone && (
+        <>
+          {/* Page overlay — shown when a nav link is clicked */}
+          {activePage && pageComponents[activePage] && (
+            <div style={{
               position: 'fixed',
-              top: 20,
-              right: 24,
-              zIndex: 60,
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff',
-              fontSize: 22,
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              cursor: 'pointer',
-              backdropFilter: 'blur(8px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            aria-label="Close"
-          >
-            ✕
-          </button>
-          {pageComponents[activePage]}
-        </div>
-      )}
+              inset: 0,
+              zIndex: 30,
+              background: 'rgba(0,0,0,0.92)',
+              overflowY: 'auto',
+            }}>
+              <button
+                onClick={() => setActivePage(null)}
+                style={{
+                  position: 'fixed',
+                  top: 20,
+                  right: 24,
+                  zIndex: 60,
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: '#fff',
+                  fontSize: 22,
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(8px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+              {pageComponents[activePage]}
+            </div>
+          )}
 
-      {/* Navbar — fixed at top, z-index 50 (above canvas and HUD).
-          We also load this immediately to fetch its imagery.
-      */}
-      <Navbar onNavigate={(page) => setActivePage(page || null)} />
+          {/* Navbar — fixed at top, z-index 50 (above canvas and HUD) */}
+          <Navbar onNavigate={(page) => setActivePage(page || null)} />
+        </>
+      )}
     </div>
   );
 }
