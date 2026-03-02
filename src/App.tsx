@@ -59,6 +59,12 @@ export default function App() {
       )}
 
       {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
+      {/* 
+        Three.js 3D world — fills the full viewport at z-index 2 
+        Loads immediately in the background behind the z-index 999
+        Preloader so WebGL shaders compile concurrently!
+      */}
+      <Map onNavigate={(page) => setActivePage(page)} />
       {/* Map mounts early so assets load in background while preloader runs. */}
       <Suspense fallback={null}>
         <Map
