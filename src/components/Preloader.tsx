@@ -4,19 +4,16 @@ import preloaderVidDesktop from '../assets/intro_enhanced.webm';
 
 interface PreloaderProps {
     onComplete: () => void;
-    canComplete: boolean;
+    canComplete?: boolean;
 }
 
-export default function Preloader({ onComplete, canComplete }: PreloaderProps) {
+export default function Preloader({ onComplete, canComplete = false }: PreloaderProps) {
     const [fadeOut, setFadeOut] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [minDurationDone, setMinDurationDone] = useState(false);
+    const [introFinished, setIntroFinished] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
-    const completedRef = useRef(false);
 
     const handleComplete = useCallback(() => {
-        if (completedRef.current) return;
-        completedRef.current = true;
         setFadeOut(true);
         // Dispatch event to Map.tsx so it knows to show the HUD / joystick
         window.dispatchEvent(new Event('start-experience'));
@@ -25,10 +22,6 @@ export default function Preloader({ onComplete, canComplete }: PreloaderProps) {
         }, 500); // matches CSS transition duration
     }, [onComplete]);
 
-    const markDurationDone = useCallback(() => {
-        setMinDurationDone(true);
-    }, []);
-
     const handleTimeUpdate = useCallback(() => {
         if (videoRef.current) {
             const { currentTime, duration } = videoRef.current;
@@ -36,19 +29,14 @@ export default function Preloader({ onComplete, canComplete }: PreloaderProps) {
                 const rawPercent = currentTime / duration;
                 // Ease-out curve, power of 5: rapidly jumps to ~90% earlier, then crawls
                 const easedPercent = 1 - Math.pow(1 - rawPercent, 5);
-                const cappedProgress = canComplete
-                    ? Math.round(easedPercent * 100)
-                    : Math.min(Math.round(easedPercent * 100), 96);
-                setProgress(Math.min(cappedProgress, 100));
+                setProgress(Math.min(Math.round(easedPercent * 100), 100));
             }
         }
-    }, [canComplete]);
+    }, []);
 
-    useEffect(() => {
-        if (minDurationDone && canComplete) {
-            handleComplete();
-        }
-    }, [minDurationDone, canComplete, handleComplete]);
+    const handleIntroFinished = useCallback(() => {
+        setIntroFinished(true);
+    }, []);
 
     useEffect(() => {
         if (videoRef.current) {
@@ -59,12 +47,19 @@ export default function Preloader({ onComplete, canComplete }: PreloaderProps) {
         }
 
         // Safety fallback timer in case 'onEnded' doesn't fire
-        const fallbackTimer = setTimeout(markDurationDone, 15000);
+        const fallbackTimer = setTimeout(handleIntroFinished, 15000);
 
         return () => {
             clearTimeout(fallbackTimer);
         };
-    }, [markDurationDone]);
+    }, [handleIntroFinished]);
+
+    useEffect(() => {
+        if (fadeOut) return;
+        if (introFinished && canComplete) {
+            handleComplete();
+        }
+    }, [introFinished, canComplete, fadeOut, handleComplete]);
 
     return (
         <div className={`preloader-container ${fadeOut ? 'fade-out' : ''}`}>
@@ -74,7 +69,7 @@ export default function Preloader({ onComplete, canComplete }: PreloaderProps) {
                 muted
                 playsInline
                 preload="auto"
-                onEnded={markDurationDone}
+                onEnded={handleIntroFinished}
                 onTimeUpdate={handleTimeUpdate}
                 className="preloader-video"
             >
