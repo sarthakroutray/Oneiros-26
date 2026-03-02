@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+const IS_DEV = import.meta.env.DEV;
+
 // ─── CONSTANTS (matching original main.js exactly) ────────────────────────────
 const GROUND_Y = 0;
 const BOUNDARY_RADIUS = 54;
@@ -9,6 +11,7 @@ const WALK_SPEED = 8;
 const RUN_SPEED = 18;
 const TURN_SPEED = 12;
 const CAM_DIST_DEFAULT = 8;
+const CAM_DIST_MOBILE_DEFAULT = 22;
 const CAM_DIST_MIN = 3;
 const CAM_DIST_MAX = 22;
 const CAM_PITCH_MIN = 0.08;
@@ -23,8 +26,24 @@ const STATE_WALK = 2;
 const STATE_NAMES = ['Idle', 'Run', 'Walk'];
 const STATE_COLORS = ['#4fffaa', '#ff7c4f', '#ffe566'];
 
-export default function Map() {
+interface MapProps {
+  showUi?: boolean;
+  onReady?: () => void;
+}
+
+export default function Map({ showUi = true, onReady }: MapProps) {
   const mountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stateEl = document.getElementById('state') as HTMLElement | null;
+    const joystickZone = document.getElementById('joystick-zone') as HTMLElement | null;
+    const hudEl = document.getElementById('hud') as HTMLElement | null;
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (stateEl) stateEl.style.display = showUi ? 'block' : 'none';
+    if (hudEl) hudEl.style.display = showUi ? 'flex' : 'none';
+    if (joystickZone) joystickZone.style.display = showUi && isTouch ? 'flex' : 'none';
+  }, [showUi]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -37,15 +56,28 @@ export default function Map() {
     const joystickKnob = document.getElementById('joystick-knob') as HTMLElement | null;
     const hudEl = document.getElementById('hud') as HTMLElement | null;
 
-    // Show HUD / joystick now that the 3D scene is mounting
+    // Show HUD / joystick only when preloader is done
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    if (stateEl) stateEl.style.display = 'block';
-    if (hudEl) hudEl.style.display = 'flex';
-    if (isTouch && joystickZone) joystickZone.style.display = 'flex';
+    if (stateEl) stateEl.style.display = showUi ? 'block' : 'none';
+    if (hudEl) hudEl.style.display = showUi ? 'flex' : 'none';
+    if (joystickZone) joystickZone.style.display = showUi && isTouch ? 'flex' : 'none';
 
     // ── RENDERER ──────────────────────────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const targetPixelRatio = Math.min(window.devicePixelRatio, 2);
+    const minPixelRatio = isTouch ? 0.95 : targetPixelRatio;
+    const startupPixelRatio = isTouch ? Math.min(targetPixelRatio, 1.15) : targetPixelRatio;
+    let dynamicPixelRatio = startupPixelRatio;
+
+    const applyPixelRatio = (value: number) => {
+      const next = Math.max(minPixelRatio, Math.min(targetPixelRatio, value));
+      if (Math.abs(next - dynamicPixelRatio) < 0.01) return;
+      dynamicPixelRatio = next;
+      renderer.setPixelRatio(dynamicPixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight, false);
+    };
+
+    renderer.setPixelRatio(startupPixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -74,7 +106,7 @@ export default function Map() {
 
     let camYaw = Math.PI;
     let camPitch = 0.28;
-    let camDist = CAM_DIST_DEFAULT;
+    let camDist = isTouch ? CAM_DIST_MOBILE_DEFAULT : CAM_DIST_DEFAULT;
     const camCurrent = new THREE.Vector3(0, 4, camDist);
 
     const clampCamDist = (v: number) =>
@@ -148,8 +180,12 @@ export default function Map() {
       eCol[i * 3 + 2] = c.b;
     };
 
-    // Initialise — stagger lifetimes so particles don't all burst at once
-    for (let i = 0; i < EMBER_COUNT; i++) resetEmber(i, true);
+    // Initialise a subset immediately; finish in first frames to avoid startup spike
+    const EMBER_BOOTSTRAP_COUNT = Math.min(260, EMBER_COUNT);
+    let emberInitIndex = 0;
+    for (; emberInitIndex < EMBER_BOOTSTRAP_COUNT; emberInitIndex++) {
+      resetEmber(emberInitIndex, true);
+    }
 
     const emberGeo = new THREE.BufferGeometry();
     const emberPosAttr = new THREE.BufferAttribute(ePos, 3);
@@ -188,6 +224,7 @@ export default function Map() {
 
     const emberPoints = new THREE.Points(emberGeo, emberMat);
     emberPoints.renderOrder = 1; // draw after opaque geometry
+    emberPoints.visible = !isTouch;
     scene.add(emberPoints);
 
     // ── NEON GRID FLOOR ───────────────────────────────────────────────────────
@@ -252,6 +289,7 @@ export default function Map() {
     neonSurface.rotation.x = -Math.PI / 2;
     neonSurface.position.y = GROUND_Y + 0.01; // Slightly above ground to prevent z-fight with map
     neonSurface.receiveShadow = false; // Disable shadow reception so it doesn't darken the neon lines
+    neonSurface.visible = !isTouch;
     scene.add(neonSurface);
 
     // ── RESIZE ────────────────────────────────────────────────────────────────
@@ -260,9 +298,10 @@ export default function Map() {
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
+    const onOrientationChange = () => setTimeout(onResize, 100);
     window.addEventListener('resize', onResize);
     // Orientation change fires before innerWidth/Height updates on iOS
-    window.addEventListener('orientationchange', () => setTimeout(onResize, 100));
+    window.addEventListener('orientationchange', onOrientationChange);
 
     // ── KEYBOARD INPUT ────────────────────────────────────────────────────────
     const keys = { w: false, a: false, s: false, d: false, shift: false };
@@ -500,10 +539,43 @@ export default function Map() {
     const camRight = new THREE.Vector3();
     const UP = new THREE.Vector3(0, 1, 0);
     let animFrameId = 0;
+    let mobileSceneReady = !isTouch;
+    let notifiedReady = false;
+
+    const notifyReady = () => {
+      if (notifiedReady) return;
+      notifiedReady = true;
+      onReady?.();
+    };
+    const startupPerfUntil = performance.now() + (isTouch ? 2500 : 1200);
+    let frameSamples = 0;
+    let dtAccum = 0;
+    let emberFrameToggle = 0;
 
     const tick = () => {
       animFrameId = requestAnimationFrame(tick);
       const dt = Math.min(clock.getDelta(), 0.05);
+      const now = performance.now();
+
+      if (isTouch && now >= startupPerfUntil && dynamicPixelRatio < targetPixelRatio) {
+        applyPixelRatio(dynamicPixelRatio + 0.03);
+      }
+
+      if (isTouch) {
+        frameSamples += 1;
+        dtAccum += dt;
+        if (frameSamples >= 28) {
+          const fps = frameSamples / Math.max(dtAccum, 0.0001);
+          if (fps < 42 && dynamicPixelRatio > minPixelRatio) applyPixelRatio(dynamicPixelRatio - 0.08);
+          else if (fps > 56 && dynamicPixelRatio < targetPixelRatio) applyPixelRatio(dynamicPixelRatio + 0.04);
+          frameSamples = 0;
+          dtAccum = 0;
+        }
+      }
+
+      if (isTouch && !mobileSceneReady) {
+        return;
+      }
 
       // Update animation mixers
       for (const mx of mixers) mx.update(dt);
@@ -567,36 +639,49 @@ export default function Map() {
       if (armatures.length > 0) applyCharTransform();
 
       // ── UPDATE EMBERS ───────────────────────────────────────────────────────
-      for (let i = 0; i < EMBER_COUNT; i++) {
-        eLife[i] += dt;
-        if (eLife[i] >= eMax[i]) { resetEmber(i, false); continue; }
-
-        const t = eLife[i] / eMax[i]; // 0 = just born, 1 = dying
-
-        // Slow sinusoidal horizontal wobble — lazy, dreamlike drift
-        const wobble = Math.sin(eLife[i] * 1.1 + i * 0.37) * 0.006;
-
-        ePos[i * 3] += (eVel[i * 3] + wobble) * dt;
-        ePos[i * 3 + 1] += eVel[i * 3 + 1] * dt * (1 - t * 0.15); // barely decelerates
-        ePos[i * 3 + 2] += (eVel[i * 3 + 2] + wobble) * dt;
-
-        // Fade: gentle fade-in → long luminous hold → slow fade-out
-        const alpha = t < 0.10
-          ? t / 0.10
-          : t > 0.75
-            ? 1 - (t - 0.75) / 0.25
-            : 1.0;
-
-        eCol[i * 3] = eBase[i * 3] * alpha;
-        eCol[i * 3 + 1] = eBase[i * 3 + 1] * alpha;
-        eCol[i * 3 + 2] = eBase[i * 3 + 2] * alpha;
-
-        // Smooth size taper — no flicker, just slow shrink
-        eSz[i] = eSz[i] * 0.998 + (0.04 + 0.14 * (1 - t)) * 0.002;
+      if (emberInitIndex < EMBER_COUNT) {
+        const initChunk = Math.min(160, EMBER_COUNT - emberInitIndex);
+        for (let i = 0; i < initChunk; i++) {
+          resetEmber(emberInitIndex + i, true);
+        }
+        emberInitIndex += initChunk;
       }
-      emberPosAttr.needsUpdate = true;
-      emberColAttr.needsUpdate = true;
-      emberSzAttr.needsUpdate = true;
+
+      const startupParticleDecimate = isTouch && now < startupPerfUntil;
+      const shouldUpdateEmbers = !startupParticleDecimate || ((emberFrameToggle++ & 1) === 0);
+
+      if (shouldUpdateEmbers) {
+        for (let i = 0; i < EMBER_COUNT; i++) {
+          eLife[i] += dt;
+          if (eLife[i] >= eMax[i]) { resetEmber(i, false); continue; }
+
+          const t = eLife[i] / eMax[i]; // 0 = just born, 1 = dying
+
+          // Slow sinusoidal horizontal wobble — lazy, dreamlike drift
+          const wobble = Math.sin(eLife[i] * 1.1 + i * 0.37) * 0.006;
+
+          ePos[i * 3] += (eVel[i * 3] + wobble) * dt;
+          ePos[i * 3 + 1] += eVel[i * 3 + 1] * dt * (1 - t * 0.15); // barely decelerates
+          ePos[i * 3 + 2] += (eVel[i * 3 + 2] + wobble) * dt;
+
+          // Fade: gentle fade-in → long luminous hold → slow fade-out
+          const alpha = t < 0.10
+            ? t / 0.10
+            : t > 0.75
+              ? 1 - (t - 0.75) / 0.25
+              : 1.0;
+
+          eCol[i * 3] = eBase[i * 3] * alpha;
+          eCol[i * 3 + 1] = eBase[i * 3 + 1] * alpha;
+          eCol[i * 3 + 2] = eBase[i * 3 + 2] * alpha;
+
+          // Smooth size taper — no flicker, just slow shrink
+          eSz[i] = eSz[i] * 0.998 + (0.04 + 0.14 * (1 - t)) * 0.002;
+        }
+        emberPosAttr.needsUpdate = true;
+        emberColAttr.needsUpdate = true;
+        emberSzAttr.needsUpdate = true;
+      }
 
       // Third-person camera
       const eyeY = charPos.y + charH * 0.55;
@@ -629,35 +714,46 @@ export default function Map() {
       new Promise<any>((res, rej) => loader.load(url, res, undefined, rej));
 
     async function init() {
-      // 1. Map
-      try {
-        const mapGltf = await loadGLB('/map.glb');
-        fixMapMaterials(mapGltf.scene);
-        scene.add(mapGltf.scene);
-        console.log('✅ map.glb loaded');
-      } catch (err) {
-        console.error('❌ map.glb failed:', (err as Error).message);
+      // 1) Load map + character in parallel to cut startup waiting time
+      const [mapResult, charResult] = await Promise.allSettled([
+        loadGLB('/map.glb'),
+        loadGLB('/character.glb'),
+      ]);
+
+      if (mapResult.status !== 'fulfilled') {
+        const mapLoadError = mapResult.reason as Error;
+        console.error('❌ map.glb failed:', mapLoadError?.message ?? 'Unknown error');
+        notifyReady();
         return;
       }
+
+      const mapGltf = mapResult.value;
+      fixMapMaterials(mapGltf.scene);
+      scene.add(mapGltf.scene);
+      if (IS_DEV) console.log('✅ map.glb loaded');
 
       // 2. Character
-      let charGltf: any;
-      try {
-        charGltf = await loadGLB('/character.glb');
-      } catch (err) {
+      if (charResult.status !== 'fulfilled') {
         console.warn('⚠️ character.glb not found, running map only');
+        emberPoints.visible = true;
+        neonSurface.visible = true;
+        mobileSceneReady = true;
+        notifyReady();
         return;
       }
+      const charGltf = charResult.value;
 
       // Debug log — open DevTools to see your GLB structure
-      console.log('✅ character.glb:', {
-        children: charGltf.scene.children.length,
-        animations: charGltf.animations.length,
-      });
-      charGltf.scene.children.forEach((c: THREE.Object3D, i: number) =>
-        console.log(`  child[${i}] "${c.name}" (${c.type})`));
-      charGltf.animations.forEach((a: THREE.AnimationClip, i: number) =>
-        console.log(`  anim[${i}] "${a.name}" ${a.duration.toFixed(2)}s`));
+      if (IS_DEV) {
+        console.log('✅ character.glb:', {
+          children: charGltf.scene.children.length,
+          animations: charGltf.animations.length,
+        });
+        charGltf.scene.children.forEach((c: THREE.Object3D, i: number) =>
+          console.log(`  child[${i}] "${c.name}" (${c.type})`));
+        charGltf.animations.forEach((a: THREE.AnimationClip, i: number) =>
+          console.log(`  anim[${i}] "${a.name}" ${a.duration.toFixed(2)}s`));
+      }
 
       const rootChildren = charGltf.scene.children as THREE.Object3D[];
       const anims = charGltf.animations as THREE.AnimationClip[];
@@ -665,7 +761,7 @@ export default function Map() {
       if (rootChildren.length >= 3) {
         // ── 3-ARMATURE MODE (original main.js structure) ──────────────────
         // child[0]=Idle  child[1]=Run  child[2]=Walk — each pre-animated
-        console.log('📦 3-armature mode');
+        if (IS_DEV) console.log('📦 3-armature mode');
         const children = rootChildren.slice();
         for (let i = 0; i < 3; i++) {
           const arm = children[i];
@@ -680,14 +776,14 @@ export default function Map() {
             const action = mixer.clipAction(clip);
             action.setLoop(THREE.LoopRepeat, Infinity);
             action.play();
-            console.log(`  arm[${i}] → "${clip.name}"`);
+            if (IS_DEV) console.log(`  arm[${i}] → "${clip.name}"`);
           }
           armatures.push(arm);
           mixers.push(mixer);
         }
       } else if (anims.length >= 1) {
         // ── SINGLE-ARMATURE FALLBACK — clone per animation ─────────────────
-        console.log('📦 Single-armature fallback (cloning)');
+        if (IS_DEV) console.log('📦 Single-armature fallback (cloning)');
         for (let i = 0; i < Math.min(3, anims.length); i++) {
           const arm = charGltf.scene.clone(true);
           arm.traverse((n: any) => {
@@ -701,7 +797,7 @@ export default function Map() {
           action.play();
           armatures.push(arm);
           mixers.push(mixer);
-          console.log(`  clone[${i}] → "${anims[i].name}"`);
+          if (IS_DEV) console.log(`  clone[${i}] → "${anims[i].name}"`);
         }
       } else {
         console.warn('⚠️ Unexpected character.glb structure');
@@ -713,10 +809,17 @@ export default function Map() {
       charH = Math.max(bbox.getSize(new THREE.Vector3()).y, 1.0);
       charPos.set(0, GROUND_Y, 0);
       applyCharTransform();
-      console.log(`  charH = ${charH.toFixed(2)}`);
+      emberPoints.visible = true;
+      neonSurface.visible = true;
+      mobileSceneReady = true;
+      notifyReady();
+      if (IS_DEV) console.log(`  charH = ${charH.toFixed(2)}`);
     }
 
-    init().catch(err => console.error('Map init error:', err));
+    init().catch(err => {
+      console.error('Map init error:', err);
+      notifyReady();
+    });
 
     // ── CLEANUP ───────────────────────────────────────────────────────────────
     return () => {
@@ -737,6 +840,7 @@ export default function Map() {
       window.removeEventListener('touchend', onTouchEndCancel);
       window.removeEventListener('touchcancel', onTouchEndCancel);
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onOrientationChange);
       joystickZone?.removeEventListener('touchstart', onJoyTouchStart);
 
       renderer.dispose();

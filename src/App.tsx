@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
-import Map from './components/Map';
+
+const loadMap = () => import('./components/Map');
+const Map = lazy(loadMap);
 
 /**
  * Rendering order (z-index stack):
@@ -13,6 +15,19 @@ import Map from './components/Map';
  */
 export default function App() {
   const [preloaderDone, setPreloaderDone] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
+
+  useEffect(() => {
+    if (preloaderDone) return;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) return;
+
+    const warmupTimer = window.setTimeout(() => {
+      void loadMap();
+    }, 180);
+
+    return () => window.clearTimeout(warmupTimer);
+  }, [preloaderDone]);
 
   return (
     // Root: fixed, full viewport, black background
@@ -21,20 +36,23 @@ export default function App() {
       {/* ── PRELOADER (video + progress bar) ─────────────────────────────── */}
       {/* Stays mounted until onComplete fires, then fades out and unmounts */}
       {!preloaderDone && (
-        <Preloader onComplete={() => setPreloaderDone(true)} />
+        <Preloader
+          canComplete={sceneReady}
+          onComplete={() => setPreloaderDone(true)}
+        />
       )}
 
       {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
-      {/* Both Map and Navbar mount only after the preloader finishes.        */}
-      {preloaderDone && (
-        <>
-          {/* Three.js 3D world — fills the full viewport at z-index 2 */}
-          <Map />
+      {/* Map mounts early so assets load in background while preloader runs. */}
+      <Suspense fallback={null}>
+        <Map
+          showUi={preloaderDone}
+          onReady={() => setSceneReady(true)}
+        />
+      </Suspense>
 
-          {/* Navbar — fixed at top, z-index 50 (above canvas and HUD) */}
-          <Navbar />
-        </>
-      )}
+      {/* Navbar appears after preloader is complete */}
+      {preloaderDone && <Navbar />}
     </div>
   );
 }
