@@ -54,7 +54,10 @@ export default function App() {
         Loads immediately in the background behind the z-index 999
         Preloader so WebGL shaders compile concurrently!
       */}
-      <Map onReady={handleSceneReady} />
+      <Map
+        onNavigate={(page) => setActivePage(page || null)}
+        onReady={handleSceneReady}
+      />
 
       {/* Page overlay — shown when a nav link is clicked */}
       {activePage && pageComponents[activePage] && (
