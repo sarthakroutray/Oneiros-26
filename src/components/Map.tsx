@@ -2,17 +2,20 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+const IS_DEV = import.meta.env.DEV;
+
 // ─── CONSTANTS (matching original main.js exactly) ────────────────────────────
 const GROUND_Y = 0;
 const BOUNDARY_RADIUS = 54;
 const WALK_SPEED = 8;
 const RUN_SPEED = 18;
 const TURN_SPEED = 12;
-const CAM_DIST_DEFAULT = 22;
+const CAM_DIST_DEFAULT = 8;
+const CAM_DIST_MOBILE_DEFAULT = 22;
 const CAM_DIST_MIN = 3;
-const CAM_DIST_MAX = 40;
-const CAM_PITCH_MIN = 0.02;
-const CAM_PITCH_MAX = 1.4;
+const CAM_DIST_MAX = 22;
+const CAM_PITCH_MIN = 0.08;
+const CAM_PITCH_MAX = 0.78;
 const CAM_SMOOTH = 0.14;
 const CAM_MAX_RADIUS = 57;
 const SPRINT_THRESHOLD = 0.72;
@@ -23,8 +26,24 @@ const STATE_WALK = 2;
 const STATE_NAMES = ['Idle', 'Run', 'Walk'];
 const STATE_COLORS = ['#4fffaa', '#ff7c4f', '#ffe566'];
 
-export default function Map() {
+interface MapProps {
+  showUi?: boolean;
+  onReady?: () => void;
+}
+
+export default function Map({ showUi = true, onReady }: MapProps) {
   const mountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stateEl = document.getElementById('state') as HTMLElement | null;
+    const joystickZone = document.getElementById('joystick-zone') as HTMLElement | null;
+    const hudEl = document.getElementById('hud') as HTMLElement | null;
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (stateEl) stateEl.style.display = showUi ? 'block' : 'none';
+    if (hudEl) hudEl.style.display = showUi ? 'flex' : 'none';
+    if (joystickZone) joystickZone.style.display = showUi && isTouch ? 'flex' : 'none';
+  }, [showUi]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -37,25 +56,29 @@ export default function Map() {
     const joystickKnob = document.getElementById('joystick-knob') as HTMLElement | null;
     const hudEl = document.getElementById('hud') as HTMLElement | null;
 
-    // Show HUD / joystick only AFTER the preloader finishes (now that we mount concurrently)
+    // Show HUD / joystick only when preloader is done
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-    const showUI = () => {
-      if (stateEl) stateEl.style.display = 'block';
-      if (hudEl) hudEl.style.display = 'flex';
-      if (isTouch && joystickZone) joystickZone.style.display = 'flex';
-    };
-
-    window.addEventListener('start-experience', showUI);
+    if (stateEl) stateEl.style.display = showUi ? 'block' : 'none';
+    if (hudEl) hudEl.style.display = showUi ? 'flex' : 'none';
+    if (joystickZone) joystickZone.style.display = showUi && isTouch ? 'flex' : 'none';
 
     // ── RENDERER ──────────────────────────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: false, // Ensure no transparency lets the DOM show through
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const targetPixelRatio = Math.min(window.devicePixelRatio, 2);
+    const minPixelRatio = isTouch ? 0.95 : targetPixelRatio;
+    const startupPixelRatio = isTouch ? Math.min(targetPixelRatio, 1.15) : targetPixelRatio;
+    let dynamicPixelRatio = startupPixelRatio;
+
+    const applyPixelRatio = (value: number) => {
+      const next = Math.max(minPixelRatio, Math.min(targetPixelRatio, value));
+      if (Math.abs(next - dynamicPixelRatio) < 0.01) return;
+      dynamicPixelRatio = next;
+      renderer.setPixelRatio(dynamicPixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight, false);
+    };
+
+    renderer.setPixelRatio(startupPixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(new THREE.Color(0x020205), 1); // Set clear color explicitly
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -77,14 +100,13 @@ export default function Map() {
 
     // ── SCENE + CAMERA ─────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020205); // Very dark cosmic blue
     const camera = new THREE.PerspectiveCamera(
       60, window.innerWidth / window.innerHeight, 0.05, 300
     );
 
     let camYaw = Math.PI;
-    let camPitch = 0.1;
-    let camDist = CAM_DIST_DEFAULT;
+    let camPitch = 0.28;
+    let camDist = isTouch ? CAM_DIST_MOBILE_DEFAULT : CAM_DIST_DEFAULT;
     const camCurrent = new THREE.Vector3(0, 4, camDist);
 
     const clampCamDist = (v: number) =>
@@ -158,8 +180,12 @@ export default function Map() {
       eCol[i * 3 + 2] = c.b;
     };
 
-    // Initialise — stagger lifetimes so particles don't all burst at once
-    for (let i = 0; i < EMBER_COUNT; i++) resetEmber(i, true);
+    // Initialise a subset immediately; finish in first frames to avoid startup spike
+    const EMBER_BOOTSTRAP_COUNT = Math.min(260, EMBER_COUNT);
+    let emberInitIndex = 0;
+    for (; emberInitIndex < EMBER_BOOTSTRAP_COUNT; emberInitIndex++) {
+      resetEmber(emberInitIndex, true);
+    }
 
     const emberGeo = new THREE.BufferGeometry();
     const emberPosAttr = new THREE.BufferAttribute(ePos, 3);
@@ -198,6 +224,7 @@ export default function Map() {
 
     const emberPoints = new THREE.Points(emberGeo, emberMat);
     emberPoints.renderOrder = 1; // draw after opaque geometry
+    emberPoints.visible = !isTouch;
     scene.add(emberPoints);
 
     // ── NEON GRID FLOOR ───────────────────────────────────────────────────────
@@ -219,207 +246,51 @@ export default function Map() {
         uniform vec3 color1;
         uniform vec3 color2;
         varying vec3 vWorldPos;
-
         void main() {
           vec2 coord = vWorldPos.xz * 0.5; // Grid scale
           
-          // Distance squared for fog (avoiding costly length sqrt)
-          vec2 camOffset = vWorldPos.xz - cameraPosition.xz;
-          float distSq = dot(camOffset, camOffset);
-          
-          // Fast exponential squared fog (0.035^2 = 0.001225)
-          float fogFactor = clamp(exp(-distSq * 0.001225), 0.0, 1.0);
-          
           // Using fwidth for anti-aliased lines
           vec2 grid = abs(fract(coord - 0.5) - 0.5) / fwidth(coord);
+          // Increase line thickness slightly and add a soft bloom/falloff
           float line = min(grid.x, grid.y);
           
-          // Optimized linear clamps instead of expensive smoothsteps
-          float core = clamp(1.2 - line, 0.0, 1.0);
-          float glow = clamp(1.0 - line * 0.1666, 0.0, 1.0);
+          // Core sharp line
+          float core = 1.0 - smoothstep(0.0, 1.2, line);
+          // Outer soft emissive glow (bloom)
+          float glow = 1.0 - smoothstep(0.0, 6.0, line);
           float gridAlpha = core + (glow * 0.4);
           
           // Glowing gradient
           float mixVal = sin(vWorldPos.x * 0.1) * cos(vWorldPos.z * 0.1) * 0.5 + 0.5;
-          vec3 gridCol = mix(color1, color2, mixVal) * 3.0;
+          vec3 gridCol = mix(color1, color2, mixVal) * 3.0; // intense emissive
           
-          // Base color and fog mix
+          // Very dark, slightly reflective base surface color (simulated base)
           vec3 baseCol = vec3(0.02, 0.02, 0.03); 
-          vec3 finalCol = mix(vec3(0.0), mix(baseCol, gridCol, gridAlpha), fogFactor);
+          vec3 finalCol = mix(baseCol, gridCol, gridAlpha);
+          
+          // Exponential fog fade to black
+          float dist = length(vWorldPos.xz - cameraPosition.xz);
+          float fogDensity = 0.035;
+          float fogFactor = exp(-pow(dist * fogDensity, 2.0));
+          fogFactor = clamp(fogFactor, 0.0, 1.0);
+          
+          // Mix with black for the fog effect instead of just alpha fading, 
+          // to keep the base dark surface solid until it reaches horizon.
+          finalCol = mix(vec3(0.0, 0.0, 0.0), finalCol, fogFactor);
           
           gl_FragColor = vec4(finalCol, 1.0);
         }
       `,
-      transparent: false, // Opaque avoids heavy screen overdraw
-      depthWrite: true,   // Let it occlude things underneath
+      transparent: true,
+      depthWrite: false,
     });
 
     const neonSurface = new THREE.Mesh(surfaceGeo, surfaceMat);
     neonSurface.rotation.x = -Math.PI / 2;
     neonSurface.position.y = GROUND_Y + 0.01; // Slightly above ground to prevent z-fight with map
     neonSurface.receiveShadow = false; // Disable shadow reception so it doesn't darken the neon lines
+    neonSurface.visible = !isTouch;
     scene.add(neonSurface);
-
-    // ── STARS (SKY) ────────────────────────────────────────────────────────
-    const STARS_COUNT = 3000;
-    const sPos = new Float32Array(STARS_COUNT * 3);
-    const sBaseCol = new Float32Array(STARS_COUNT * 3);
-    const sPhase = new Float32Array(STARS_COUNT); // random phase for twinkling
-    const sSz = new Float32Array(STARS_COUNT);
-
-    for (let i = 0; i < STARS_COUNT; i++) {
-      const radius = 120 + Math.random() * 80;
-      const u = Math.random();
-      const v = Math.random();
-      const theta = 2 * Math.PI * u;
-      const phi = Math.acos(v); // 0 to pi/2 (upper half)
-
-      sPos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      sPos[i * 3 + 1] = radius * Math.cos(phi) - 10; // raised slightly
-      sPos[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
-
-      const intensity = 0.5 + Math.random() * 0.5;
-      const colorType = Math.random();
-      const c = new THREE.Color(0xffffff);
-      if (colorType > 0.8) c.setHex(0xaaaaFF);
-      else if (colorType > 0.6) c.setHex(0xffddaa);
-
-      sBaseCol[i * 3] = c.r * intensity;
-      sBaseCol[i * 3 + 1] = c.g * intensity;
-      sBaseCol[i * 3 + 2] = c.b * intensity;
-
-      sPhase[i] = Math.random() * Math.PI * 2;
-      sSz[i] = 2.0 + Math.random() * 4.0; // doubled size so they show up easily
-    }
-
-    const starsGeo = new THREE.BufferGeometry();
-    starsGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-    starsGeo.setAttribute('color', new THREE.BufferAttribute(sBaseCol, 3));
-    starsGeo.setAttribute('phase', new THREE.BufferAttribute(sPhase, 1));
-    starsGeo.setAttribute('size', new THREE.BufferAttribute(sSz, 1));
-
-    const starCanvas = document.createElement('canvas');
-    starCanvas.width = starCanvas.height = 32;
-    const starCtx = starCanvas.getContext('2d')!;
-    const starGrd = starCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    starGrd.addColorStop(0, 'rgba(255,255,255,1)');
-    starGrd.addColorStop(0.2, 'rgba(255,255,255,0.8)');
-    starGrd.addColorStop(0.5, 'rgba(255,255,255,0.2)');
-    starGrd.addColorStop(1, 'rgba(255,255,255,0)');
-    starCtx.fillStyle = starGrd;
-    starCtx.fillRect(0, 0, 32, 32);
-    const starTex = new THREE.CanvasTexture(starCanvas);
-
-    const starsMat = new THREE.ShaderMaterial({
-      uniforms: {
-        time: { value: 0 },
-        starTexture: { value: starTex }
-      },
-      vertexShader: `
-        attribute float phase;
-        attribute float size;
-        attribute vec3 color;
-        varying vec3 vColor;
-        varying float vAlpha;
-        uniform float time;
-        void main() {
-          vColor = color;
-          // Twinkle effect
-          vAlpha = 0.5 + 0.5 * sin(time * 2.0 + phase);
-          // Glitch / fast flicker for some stars
-          if (fract(phase * 12.3) > 0.9) {
-              vAlpha *= 0.5 + 0.5 * sin(time * 15.0 + phase * 100.0);
-          }
-          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-          gl_PointSize = size * (300.0 / -mvPosition.z) * (0.5 + vAlpha * 0.5);
-          gl_Position = projectionMatrix * mvPosition;
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D starTexture;
-        varying vec3 vColor;
-        varying float vAlpha;
-        void main() {
-          vec4 texColor = texture2D(starTexture, gl_PointCoord);
-          gl_FragColor = vec4(vColor * vAlpha * texColor.rgb, texColor.a * vAlpha);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      depthTest: true,
-    });
-
-    const starsObj = new THREE.Points(starsGeo, starsMat);
-    starsObj.renderOrder = -1; // Draw *first* over the background, before other transparent things
-    scene.add(starsObj);
-
-    // ── SHOOTING STARS ────────────────────────────────────────────────────────
-    const ssGeo = new THREE.BufferGeometry();
-    const MAX_SHOOTING_STARS = 15;
-    const ssPos = new Float32Array(MAX_SHOOTING_STARS * 6);
-    const ssCol = new Float32Array(MAX_SHOOTING_STARS * 6);
-
-    for (let i = 0; i < MAX_SHOOTING_STARS * 6; i++) {
-      ssPos[i] = 0;
-      if (i % 3 === 1) ssPos[i] = -1000;
-    }
-
-    type SSData = { active: boolean, pos: THREE.Vector3, dir: THREE.Vector3, speed: number, length: number, age: number, maxAge: number };
-    const ssData: SSData[] = [];
-    for (let i = 0; i < MAX_SHOOTING_STARS; i++) {
-      ssData.push({
-        active: false,
-        pos: new THREE.Vector3(),
-        dir: new THREE.Vector3(),
-        speed: 0,
-        length: 0,
-        age: 0,
-        maxAge: 0,
-      });
-    }
-
-    ssGeo.setAttribute('position', new THREE.BufferAttribute(ssPos, 3));
-    ssGeo.setAttribute('color', new THREE.BufferAttribute(ssCol, 3));
-
-    const ssMat = new THREE.LineBasicMaterial({
-      vertexColors: true,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      linewidth: 2, // Depending on WebGL implementation...
-    });
-
-    const ssObj = new THREE.LineSegments(ssGeo, ssMat);
-    ssObj.renderOrder = -1;
-    scene.add(ssObj);
-
-    const resetShootingStar = (index: number) => {
-      const d = ssData[index];
-      d.active = true;
-      const r = 120 + Math.random() * 50;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI * 0.25 + 0.05;
-      d.pos.set(
-        r * Math.sin(phi) * Math.cos(theta),
-        r * Math.cos(phi),
-        r * Math.sin(phi) * Math.sin(theta)
-      );
-      d.dir.set(
-        (Math.random() - 0.5) * 2,
-        -Math.random() * 0.2 - 0.05,
-        (Math.random() - 0.5) * 2
-      ).normalize();
-
-      d.speed = 150 + Math.random() * 100;
-      d.length = 15 + Math.random() * 25;
-      d.age = 0;
-      d.maxAge = 0.5 + Math.random() * 0.8;
-
-      const i3 = index * 6;
-      ssCol[i3] = 1; ssCol[i3 + 1] = 1; ssCol[i3 + 2] = 1;
-      ssCol[i3 + 3] = 0; ssCol[i3 + 4] = 0; ssCol[i3 + 5] = 0;
-    };
 
     // ── RESIZE ────────────────────────────────────────────────────────────────
     const onResize = () => {
@@ -427,9 +298,10 @@ export default function Map() {
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     };
+    const onOrientationChange = () => setTimeout(onResize, 100);
     window.addEventListener('resize', onResize);
     // Orientation change fires before innerWidth/Height updates on iOS
-    window.addEventListener('orientationchange', () => setTimeout(onResize, 100));
+    window.addEventListener('orientationchange', onOrientationChange);
 
     // ── KEYBOARD INPUT ────────────────────────────────────────────────────────
     const keys = { w: false, a: false, s: false, d: false, shift: false };
@@ -642,8 +514,11 @@ export default function Map() {
         if (!node.isMesh) return;
         const n: string = node.name.toLowerCase();
 
-        if (n === 'sphere' || n.includes('sky')) {
-          node.visible = false; // Hide the baked-in white sky dome
+        if (n === 'sphere') {
+          const mats: THREE.Material[] = Array.isArray(node.material)
+            ? node.material : [node.material];
+          mats.forEach(mat => { mat.side = THREE.DoubleSide; });
+          node.castShadow = node.receiveShadow = false;
         } else if (n === 'building' || n === 'plane.002') {
           const mats: THREE.Material[] = Array.isArray(node.material)
             ? node.material : [node.material];
@@ -664,10 +539,43 @@ export default function Map() {
     const camRight = new THREE.Vector3();
     const UP = new THREE.Vector3(0, 1, 0);
     let animFrameId = 0;
+    let mobileSceneReady = !isTouch;
+    let notifiedReady = false;
+
+    const notifyReady = () => {
+      if (notifiedReady) return;
+      notifiedReady = true;
+      onReady?.();
+    };
+    const startupPerfUntil = performance.now() + (isTouch ? 2500 : 1200);
+    let frameSamples = 0;
+    let dtAccum = 0;
+    let emberFrameToggle = 0;
 
     const tick = () => {
       animFrameId = requestAnimationFrame(tick);
       const dt = Math.min(clock.getDelta(), 0.05);
+      const now = performance.now();
+
+      if (isTouch && now >= startupPerfUntil && dynamicPixelRatio < targetPixelRatio) {
+        applyPixelRatio(dynamicPixelRatio + 0.03);
+      }
+
+      if (isTouch) {
+        frameSamples += 1;
+        dtAccum += dt;
+        if (frameSamples >= 28) {
+          const fps = frameSamples / Math.max(dtAccum, 0.0001);
+          if (fps < 42 && dynamicPixelRatio > minPixelRatio) applyPixelRatio(dynamicPixelRatio - 0.08);
+          else if (fps > 56 && dynamicPixelRatio < targetPixelRatio) applyPixelRatio(dynamicPixelRatio + 0.04);
+          frameSamples = 0;
+          dtAccum = 0;
+        }
+      }
+
+      if (isTouch && !mobileSceneReady) {
+        return;
+      }
 
       // Update animation mixers
       for (const mx of mixers) mx.update(dt);
@@ -719,87 +627,61 @@ export default function Map() {
         while (diff < -Math.PI) diff += Math.PI * 2;
         charRotY += diff * Math.min(TURN_SPEED * dt, 1.0);
 
-        // Camera rotation is solely manual now. No auto-follow.
-        // if (!isDragging && camTouchId === null) {
-        //   let yd = (charRotY + Math.PI) - camYaw;
-        //   while (yd > Math.PI) yd -= Math.PI * 2;
-        //   while (yd < -Math.PI) yd += Math.PI * 2;
-        //   camYaw += yd * 0.04;
-        // }
+        // Camera auto-follows unless user is manually controlling it
+        if (!isDragging && camTouchId === null) {
+          let yd = (charRotY + Math.PI) - camYaw;
+          while (yd > Math.PI) yd -= Math.PI * 2;
+          while (yd < -Math.PI) yd += Math.PI * 2;
+          camYaw += yd * 0.04;
+        }
       }
 
       if (armatures.length > 0) applyCharTransform();
 
-      // ── UPDATE STARS ────────────────────────────────────────────────────────
-      starsMat.uniforms.time.value += dt;
-
-      // ── UPDATE SHOOTING STARS ─────────────────────────────────────────────────
-      for (let i = 0; i < MAX_SHOOTING_STARS; i++) {
-        const d = ssData[i];
-        if (!d.active) {
-          if (Math.random() < 0.015) {
-            resetShootingStar(i);
-          }
-          continue;
-        }
-
-        d.age += dt;
-        if (d.age >= d.maxAge) {
-          d.active = false;
-          ssPos[i * 6] = 0; ssPos[i * 6 + 1] = -1000; ssPos[i * 6 + 2] = 0;
-          ssPos[i * 6 + 3] = 0; ssPos[i * 6 + 4] = -1000; ssPos[i * 6 + 5] = 0;
-          continue;
-        }
-
-        d.pos.addScaledVector(d.dir, d.speed * dt);
-
-        const head = d.pos;
-        const tail = d.pos.clone().addScaledVector(d.dir, -d.length);
-
-        const idx = i * 6;
-        ssPos[idx] = head.x; ssPos[idx + 1] = head.y; ssPos[idx + 2] = head.z;
-        ssPos[idx + 3] = tail.x; ssPos[idx + 4] = tail.y; ssPos[idx + 5] = tail.z;
-
-        let alpha = 1.0;
-        if (d.age > d.maxAge - 0.2) alpha = (d.maxAge - d.age) / 0.2;
-        else if (d.age < 0.2) alpha = d.age / 0.2;
-
-        ssCol[idx] = alpha; ssCol[idx + 1] = alpha; ssCol[idx + 2] = alpha;
-      }
-      ssGeo.attributes.position.needsUpdate = true;
-      ssGeo.attributes.color.needsUpdate = true;
-
       // ── UPDATE EMBERS ───────────────────────────────────────────────────────
-      for (let i = 0; i < EMBER_COUNT; i++) {
-        eLife[i] += dt;
-        if (eLife[i] >= eMax[i]) { resetEmber(i, false); continue; }
-
-        const t = eLife[i] / eMax[i]; // 0 = just born, 1 = dying
-
-        // Slow sinusoidal horizontal wobble — lazy, dreamlike drift
-        const wobble = Math.sin(eLife[i] * 1.1 + i * 0.37) * 0.006;
-
-        ePos[i * 3] += (eVel[i * 3] + wobble) * dt;
-        ePos[i * 3 + 1] += eVel[i * 3 + 1] * dt * (1 - t * 0.15); // barely decelerates
-        ePos[i * 3 + 2] += (eVel[i * 3 + 2] + wobble) * dt;
-
-        // Fade: gentle fade-in → long luminous hold → slow fade-out
-        const alpha = t < 0.10
-          ? t / 0.10
-          : t > 0.75
-            ? 1 - (t - 0.75) / 0.25
-            : 1.0;
-
-        eCol[i * 3] = eBase[i * 3] * alpha;
-        eCol[i * 3 + 1] = eBase[i * 3 + 1] * alpha;
-        eCol[i * 3 + 2] = eBase[i * 3 + 2] * alpha;
-
-        // Smooth size taper — no flicker, just slow shrink
-        eSz[i] = eSz[i] * 0.998 + (0.04 + 0.14 * (1 - t)) * 0.002;
+      if (emberInitIndex < EMBER_COUNT) {
+        const initChunk = Math.min(160, EMBER_COUNT - emberInitIndex);
+        for (let i = 0; i < initChunk; i++) {
+          resetEmber(emberInitIndex + i, true);
+        }
+        emberInitIndex += initChunk;
       }
-      emberPosAttr.needsUpdate = true;
-      emberColAttr.needsUpdate = true;
-      emberSzAttr.needsUpdate = true;
+
+      const startupParticleDecimate = isTouch && now < startupPerfUntil;
+      const shouldUpdateEmbers = !startupParticleDecimate || ((emberFrameToggle++ & 1) === 0);
+
+      if (shouldUpdateEmbers) {
+        for (let i = 0; i < EMBER_COUNT; i++) {
+          eLife[i] += dt;
+          if (eLife[i] >= eMax[i]) { resetEmber(i, false); continue; }
+
+          const t = eLife[i] / eMax[i]; // 0 = just born, 1 = dying
+
+          // Slow sinusoidal horizontal wobble — lazy, dreamlike drift
+          const wobble = Math.sin(eLife[i] * 1.1 + i * 0.37) * 0.006;
+
+          ePos[i * 3] += (eVel[i * 3] + wobble) * dt;
+          ePos[i * 3 + 1] += eVel[i * 3 + 1] * dt * (1 - t * 0.15); // barely decelerates
+          ePos[i * 3 + 2] += (eVel[i * 3 + 2] + wobble) * dt;
+
+          // Fade: gentle fade-in → long luminous hold → slow fade-out
+          const alpha = t < 0.10
+            ? t / 0.10
+            : t > 0.75
+              ? 1 - (t - 0.75) / 0.25
+              : 1.0;
+
+          eCol[i * 3] = eBase[i * 3] * alpha;
+          eCol[i * 3 + 1] = eBase[i * 3 + 1] * alpha;
+          eCol[i * 3 + 2] = eBase[i * 3 + 2] * alpha;
+
+          // Smooth size taper — no flicker, just slow shrink
+          eSz[i] = eSz[i] * 0.998 + (0.04 + 0.14 * (1 - t)) * 0.002;
+        }
+        emberPosAttr.needsUpdate = true;
+        emberColAttr.needsUpdate = true;
+        emberSzAttr.needsUpdate = true;
+      }
 
       // Third-person camera
       const eyeY = charPos.y + charH * 0.55;
@@ -832,35 +714,46 @@ export default function Map() {
       new Promise<any>((res, rej) => loader.load(url, res, undefined, rej));
 
     async function init() {
-      // 1. Map
-      try {
-        const mapGltf = await loadGLB('/map.glb');
-        fixMapMaterials(mapGltf.scene);
-        scene.add(mapGltf.scene);
-        console.log('✅ map.glb loaded');
-      } catch (err) {
-        console.error('❌ map.glb failed:', (err as Error).message);
+      // 1) Load map + character in parallel to cut startup waiting time
+      const [mapResult, charResult] = await Promise.allSettled([
+        loadGLB('/map.glb'),
+        loadGLB('/character.glb'),
+      ]);
+
+      if (mapResult.status !== 'fulfilled') {
+        const mapLoadError = mapResult.reason as Error;
+        console.error('❌ map.glb failed:', mapLoadError?.message ?? 'Unknown error');
+        notifyReady();
         return;
       }
+
+      const mapGltf = mapResult.value;
+      fixMapMaterials(mapGltf.scene);
+      scene.add(mapGltf.scene);
+      if (IS_DEV) console.log('✅ map.glb loaded');
 
       // 2. Character
-      let charGltf: any;
-      try {
-        charGltf = await loadGLB('/character.glb');
-      } catch (err) {
+      if (charResult.status !== 'fulfilled') {
         console.warn('⚠️ character.glb not found, running map only');
+        emberPoints.visible = true;
+        neonSurface.visible = true;
+        mobileSceneReady = true;
+        notifyReady();
         return;
       }
+      const charGltf = charResult.value;
 
       // Debug log — open DevTools to see your GLB structure
-      console.log('✅ character.glb:', {
-        children: charGltf.scene.children.length,
-        animations: charGltf.animations.length,
-      });
-      charGltf.scene.children.forEach((c: THREE.Object3D, i: number) =>
-        console.log(`  child[${i}] "${c.name}" (${c.type})`));
-      charGltf.animations.forEach((a: THREE.AnimationClip, i: number) =>
-        console.log(`  anim[${i}] "${a.name}" ${a.duration.toFixed(2)}s`));
+      if (IS_DEV) {
+        console.log('✅ character.glb:', {
+          children: charGltf.scene.children.length,
+          animations: charGltf.animations.length,
+        });
+        charGltf.scene.children.forEach((c: THREE.Object3D, i: number) =>
+          console.log(`  child[${i}] "${c.name}" (${c.type})`));
+        charGltf.animations.forEach((a: THREE.AnimationClip, i: number) =>
+          console.log(`  anim[${i}] "${a.name}" ${a.duration.toFixed(2)}s`));
+      }
 
       const rootChildren = charGltf.scene.children as THREE.Object3D[];
       const anims = charGltf.animations as THREE.AnimationClip[];
@@ -868,7 +761,7 @@ export default function Map() {
       if (rootChildren.length >= 3) {
         // ── 3-ARMATURE MODE (original main.js structure) ──────────────────
         // child[0]=Idle  child[1]=Run  child[2]=Walk — each pre-animated
-        console.log('📦 3-armature mode');
+        if (IS_DEV) console.log('📦 3-armature mode');
         const children = rootChildren.slice();
         for (let i = 0; i < 3; i++) {
           const arm = children[i];
@@ -883,14 +776,14 @@ export default function Map() {
             const action = mixer.clipAction(clip);
             action.setLoop(THREE.LoopRepeat, Infinity);
             action.play();
-            console.log(`  arm[${i}] → "${clip.name}"`);
+            if (IS_DEV) console.log(`  arm[${i}] → "${clip.name}"`);
           }
           armatures.push(arm);
           mixers.push(mixer);
         }
       } else if (anims.length >= 1) {
         // ── SINGLE-ARMATURE FALLBACK — clone per animation ─────────────────
-        console.log('📦 Single-armature fallback (cloning)');
+        if (IS_DEV) console.log('📦 Single-armature fallback (cloning)');
         for (let i = 0; i < Math.min(3, anims.length); i++) {
           const arm = charGltf.scene.clone(true);
           arm.traverse((n: any) => {
@@ -904,7 +797,7 @@ export default function Map() {
           action.play();
           armatures.push(arm);
           mixers.push(mixer);
-          console.log(`  clone[${i}] → "${anims[i].name}"`);
+          if (IS_DEV) console.log(`  clone[${i}] → "${anims[i].name}"`);
         }
       } else {
         console.warn('⚠️ Unexpected character.glb structure');
@@ -916,10 +809,17 @@ export default function Map() {
       charH = Math.max(bbox.getSize(new THREE.Vector3()).y, 1.0);
       charPos.set(0, GROUND_Y, 0);
       applyCharTransform();
-      console.log(`  charH = ${charH.toFixed(2)}`);
+      emberPoints.visible = true;
+      neonSurface.visible = true;
+      mobileSceneReady = true;
+      notifyReady();
+      if (IS_DEV) console.log(`  charH = ${charH.toFixed(2)}`);
     }
 
-    init().catch(err => console.error('Map init error:', err));
+    init().catch(err => {
+      console.error('Map init error:', err);
+      notifyReady();
+    });
 
     // ── CLEANUP ───────────────────────────────────────────────────────────────
     return () => {
@@ -927,11 +827,9 @@ export default function Map() {
 
       // Hide HUD/joystick when unmounting
       if (stateEl) stateEl.style.display = 'none';
-      if (stateEl) stateEl.style.display = 'none';
       if (hudEl) hudEl.style.display = 'none';
       if (joystickZone) joystickZone.style.display = 'none';
 
-      window.removeEventListener('start-experience', showUI);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('mousedown', onMouseDown);
@@ -942,17 +840,13 @@ export default function Map() {
       window.removeEventListener('touchend', onTouchEndCancel);
       window.removeEventListener('touchcancel', onTouchEndCancel);
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onOrientationChange);
       joystickZone?.removeEventListener('touchstart', onJoyTouchStart);
 
       renderer.dispose();
       emberGeo.dispose();
       emberMat.dispose();
       spriteTex.dispose();
-      starsGeo.dispose();
-      starsMat.dispose();
-      starTex.dispose();
-      ssGeo.dispose();
-      ssMat.dispose();
       if (container.contains(canvas)) container.removeChild(canvas);
     };
   }, []);
