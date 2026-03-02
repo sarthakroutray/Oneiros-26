@@ -2,6 +2,16 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// ─── INTERACTIVE MARKERS ──────────────────────────────────────────────────────
+const MARKER_INTERACT_RADIUS = 6;   // distance to show prompt & activate
+
+const MARKER_DEFS: { page: string; label: string; pos: [number, number, number]; color: number }[] = [
+  { page: 'about',    label: 'About',        pos: [  3,   0, -44  ], color: 0x00ffee },
+  { page: 'events',   label: 'Major Events',  pos: [ 46.3, 0, -7.4 ], color: 0xff6ef9 },
+  { page: 'events',   label: 'Minor Events',  pos: [-49.2, 0, -18.2], color: 0xcc44ff },
+  { page: 'gallery',  label: 'Artist',         pos: [-48.3, 0,  22.0], color: 0xffcc00 },
+];
+
 // ─── CONSTANTS (matching original main.js exactly) ────────────────────────────
 const GROUND_Y = 0;
 const BOUNDARY_RADIUS = 54;
@@ -23,8 +33,9 @@ const STATE_WALK = 2;
 const STATE_NAMES = ['Idle', 'Run', 'Walk'];
 const STATE_COLORS = ['#4fffaa', '#ff7c4f', '#ffe566'];
 
-export default function Map() {
+export default function Map({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const mountRef = useRef<HTMLDivElement>(null);
+  const promptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -657,6 +668,122 @@ export default function Map() {
       });
     };
 
+    // ── INTERACTIVE MARKER VISUALS ────────────────────────────────────────────
+    const markerGroup = new THREE.Group();
+    scene.add(markerGroup);
+
+    // Create glowing marker pillars for each defined marker
+    const markerMeshes: THREE.Mesh[] = [];
+    for (const def of MARKER_DEFS) {
+      // Pillar of light
+      const pillarGeo = new THREE.CylinderGeometry(0.15, 0.15, 8, 8);
+      const pillarMat = new THREE.MeshBasicMaterial({
+        color: def.color,
+        transparent: true,
+        opacity: 0.25,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+      pillar.position.set(def.pos[0], 4, def.pos[2]);
+      markerGroup.add(pillar);
+
+      // Glowing orb at base
+      const orbGeo = new THREE.SphereGeometry(0.6, 16, 16);
+      const orbMat = new THREE.MeshBasicMaterial({
+        color: def.color,
+        transparent: true,
+        opacity: 0.7,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const orb = new THREE.Mesh(orbGeo, orbMat);
+      orb.position.set(def.pos[0], 1.2, def.pos[2]);
+      markerGroup.add(orb);
+      markerMeshes.push(orb);
+
+      // Floating ring
+      const ringGeo = new THREE.RingGeometry(1.0, 1.3, 32);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: def.color,
+        transparent: true,
+        opacity: 0.4,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.position.set(def.pos[0], 0.1, def.pos[2]);
+      ring.rotation.x = -Math.PI / 2;
+      markerGroup.add(ring);
+    }
+
+    // Marker interaction state
+    let nearestMarkerIdx = -1;
+    let markerPromptVisible = false;
+
+    const checkMarkerProximity = () => {
+      let closestDist = Infinity;
+      let closestIdx = -1;
+
+      for (let i = 0; i < MARKER_DEFS.length; i++) {
+        const dx = charPos.x - MARKER_DEFS[i].pos[0];
+        const dz = charPos.z - MARKER_DEFS[i].pos[2];
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIdx = i;
+        }
+      }
+
+      if (closestDist <= MARKER_INTERACT_RADIUS) {
+        nearestMarkerIdx = closestIdx;
+        if (promptRef.current) {
+          const def = MARKER_DEFS[closestIdx];
+          const hexStr = '#' + def.color.toString(16).padStart(6, '0');
+          promptRef.current.style.display = 'flex';
+          promptRef.current.innerHTML = `
+            <span style="color:${hexStr}; font-weight:700;">${def.label}</span>
+            <span style="font-size:11px; opacity:0.6; margin-top:2px;">${isTouch ? 'TAP HERE' : 'Press E'} to enter</span>
+          `;
+          markerPromptVisible = true;
+        }
+      } else {
+        nearestMarkerIdx = -1;
+        if (promptRef.current && markerPromptVisible) {
+          promptRef.current.style.display = 'none';
+          markerPromptVisible = false;
+        }
+      }
+    };
+
+    const activateMarker = () => {
+      if (nearestMarkerIdx < 0) return;
+      const def = MARKER_DEFS[nearestMarkerIdx];
+      const dx = charPos.x - def.pos[0];
+      const dz = charPos.z - def.pos[2];
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist > MARKER_INTERACT_RADIUS) return;
+
+      // Route: gallery -> sponsors, events -> events, about -> about
+      const route = def.page === 'gallery' ? 'sponsors' : def.page;
+      if (onNavigate) onNavigate(route);
+    };
+
+    // E key to interact
+    const onKeyDownE = (e: KeyboardEvent) => {
+      if (e.key === 'e' || e.key === 'E') activateMarker();
+    };
+    window.addEventListener('keydown', onKeyDownE);
+
+    // Tap on prompt to activate (mobile)
+    const onPromptTap = () => activateMarker();
+    promptRef.current?.addEventListener('click', onPromptTap);
+    promptRef.current?.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      onPromptTap();
+    });
+
     // ── RENDER LOOP ───────────────────────────────────────────────────────────
     const clock = new THREE.Clock();
     const moveDir = new THREE.Vector3();
@@ -819,6 +946,21 @@ export default function Map() {
 
       camera.position.copy(camCurrent);
       camera.lookAt(lookAt);
+
+      // ── UPDATE MARKER VISUALS ─────────────────────────────────────────────
+      const elapsed = clock.elapsedTime;
+      for (let i = 0; i < markerMeshes.length; i++) {
+        const orb = markerMeshes[i];
+        // Floating bob
+        orb.position.y = 1.2 + Math.sin(elapsed * 1.5 + i * 1.7) * 0.35;
+        // Pulse glow
+        const mat = orb.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.5 + 0.3 * Math.sin(elapsed * 2.0 + i * 0.9);
+      }
+
+      // Check proximity to markers
+      if (armatures.length > 0) checkMarkerProximity();
+
       renderer.render(scene, camera);
     };
 
@@ -953,14 +1095,43 @@ export default function Map() {
       starTex.dispose();
       ssGeo.dispose();
       ssMat.dispose();
-      if (container.contains(canvas)) container.removeChild(canvas);
+      markerMeshes.forEach(m => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
+
+      window.removeEventListener('keydown', onKeyDownE);
     };
   }, []);
 
   return (
-    <div
-      ref={mountRef}
-      style={{ position: 'fixed', inset: 0, zIndex: 2 }}
-    />
+    <>
+      <div ref={mountRef} style={{ position: 'fixed', inset: 0 }} />
+      {/* Marker interaction prompt */}
+      <div
+        ref={promptRef}
+        style={{
+          position: 'fixed',
+          bottom: 'max(100px, calc(env(safe-area-inset-bottom) + 80px))',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 45,
+          display: 'none',
+          flexDirection: 'column',
+          alignItems: 'center',
+          background: 'rgba(0,0,0,0.65)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 12,
+          padding: '12px 24px',
+          color: '#fff',
+          fontFamily: "'Orbitron', 'Courier New', monospace",
+          fontSize: 15,
+          letterSpacing: '0.08em',
+          cursor: 'pointer',
+          pointerEvents: 'auto',
+          userSelect: 'none',
+          textAlign: 'center',
+        }}
+      />
+    </>
   );
 }
