@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import './Preloader.css';
-import preloaderVidDesktop from '../assets/onoPrePC.mp4';
+import preloaderVidDesktop from '../assets/intro_enhanced.webm';
 
 interface PreloaderProps {
     onComplete: () => void;
