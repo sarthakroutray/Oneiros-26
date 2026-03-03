@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createMovementKeys, updateMovementKey } from './map/input';
 import { createMarkerPrompt, createSceneMarkers, setMarkerPromptState } from './map/markers';
-import { applyLowQualityModelTuning, enableMeshShadows, fixMapMaterials, loadGLB, type LoadedGLTF } from './map/loading';
+import { enableMeshShadows, fixMapMaterials, loadGLB, type LoadedGLTF } from './map/loading';
 import { applyAtmosphereFog, createFloatingDust } from './map/atmosphere';
 import { createNeonGridMaterial } from './map/neon';
 import {
@@ -13,8 +13,6 @@ import {
   updateModelEnhancements,
 } from './map/sceneEnhancements';
 import {
-  detectInitialQuality,
-  downgradeQuality,
   qualityProfileFor,
   type QualityProfile,
 } from './map/quality';
@@ -97,7 +95,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       antialias: true,
       alpha: false, // Ensure no transparency lets the DOM show through
     });
-    let qualityProfile = detectInitialQuality(renderer);
+    let qualityProfile = qualityProfileFor('HIGH');
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, qualityProfile.pixelRatioCap));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(new THREE.Color(0x020205), 1); // Set clear color explicitly
@@ -105,7 +103,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = qualityProfile.level === 'LOW' ? 1.36 : 1.24;
+    renderer.toneMappingExposure = 1.24;
 
     const canvas = renderer.domElement;
     canvas.style.cssText = `
@@ -123,7 +121,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     // ── SCENE + CAMERA ─────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a1328);
-    applyAtmosphereFog(scene, qualityProfile.level === 'LOW' ? 0.0038 : 0.0062);
+    applyAtmosphereFog(scene, 0.0062);
 
     const camera = new THREE.PerspectiveCamera(
       60, window.innerWidth / window.innerHeight, 0.05, 300
@@ -294,24 +292,14 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     neonSurface.receiveShadow = false; // Disable shadow reception so it doesn't darken the neon lines
     scene.add(neonSurface);
 
-    const lowTierGrid = new THREE.GridHelper(300, 70, 0x9fe7ff, 0x8b4dff);
-    lowTierGrid.position.y = GROUND_Y + 0.02;
-    if (!Array.isArray(lowTierGrid.material)) {
-      lowTierGrid.material.transparent = true;
-      lowTierGrid.material.opacity = 0.6;
-      lowTierGrid.material.depthWrite = false;
-    }
-    lowTierGrid.visible = qualityProfile.level === 'LOW';
-    scene.add(lowTierGrid);
-
     const applyQualityProfile = (nextProfile: QualityProfile) => {
       qualityProfile = nextProfile;
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, qualityProfile.pixelRatioCap));
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.shadowMap.enabled = qualityProfile.enableDynamicLights;
       renderer.shadowMap.needsUpdate = true;
-      renderer.toneMappingExposure = qualityProfile.level === 'LOW' ? 1.36 : 1.24;
-      applyAtmosphereFog(scene, qualityProfile.level === 'LOW' ? 0.0038 : 0.0062);
+      renderer.toneMappingExposure = 1.24;
+      applyAtmosphereFog(scene, 0.0062);
 
       const shouldUseShader = qualityProfile.enableShaderGrid;
       if (shouldUseShader !== gridUsesShader) {
@@ -319,8 +307,6 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         surfaceMat = gridUsesShader ? shaderGridMat : basicGridMat;
         neonSurface.material = surfaceMat;
       }
-
-      lowTierGrid.visible = qualityProfile.level === 'LOW';
 
       emberPoints.visible = qualityProfile.enableParticles;
       ssObj.visible = qualityProfile.enableParticles;
@@ -713,30 +699,12 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const camRight = new THREE.Vector3();
     const UP = new THREE.Vector3(0, 1, 0);
     let animFrameId = 0;
-    let lowFpsAccum = 0;
-
-    const maybeDowngradeQuality = (dt: number) => {
-      const fps = 1 / Math.max(dt, 0.0001);
-      if (fps < 30) {
-        lowFpsAccum += dt;
-      } else {
-        lowFpsAccum = Math.max(0, lowFpsAccum - dt * 0.5);
-      }
-
-      if (lowFpsAccum >= 3 && qualityProfile.level !== 'LOW') {
-        const next = qualityProfileFor(downgradeQuality(qualityProfile.level));
-        logDev(`⚙️ Downgrading quality ${qualityProfile.level} -> ${next.level}`);
-        applyQualityProfile(next);
-        lowFpsAccum = 0;
-      }
-    };
 
     const tick = () => {
       animFrameId = requestAnimationFrame(tick);
       timer.update();
       const dt = Math.min(timer.getDelta(), 0.05);
       const elapsed = timer.getElapsed();
-      maybeDowngradeQuality(dt);
 
       // Update animation mixers
       for (const mx of mixers) mx.update(dt);
@@ -991,7 +959,6 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     const enablePostProcessing = async () => {
-      if (!qualityProfile.enableBloom && qualityProfile.level === 'LOW') return;
       const module = await import('./map/postprocessing');
       postFxRuntime = module.createPostProcessing(renderer, scene, camera, qualityProfile);
       postFxRuntime.setSize(window.innerWidth, window.innerHeight);
@@ -1009,7 +976,6 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       if (mapResult.status === 'fulfilled') {
         const mapGltf = mapResult.value;
         fixMapMaterials(mapGltf.scene);
-        if (qualityProfile.level === 'LOW') applyLowQualityModelTuning(mapGltf.scene);
         registerModelEnhancements(mapGltf.scene, enhancementState);
         scene.add(mapGltf.scene);
         logDev('✅ map.glb loaded');
@@ -1023,7 +989,6 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       }
 
       const charGltf: LoadedGLTF = charResult.value;
-      if (qualityProfile.level === 'LOW') applyLowQualityModelTuning(charGltf.scene);
       logDev('✅ character.glb:', {
         children: charGltf.scene.children.length,
         animations: charGltf.animations.length,
@@ -1142,8 +1107,6 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       ssMat.dispose();
       shaderGridMat.dispose();
       basicGridMat.dispose();
-      if (!Array.isArray(lowTierGrid.material)) lowTierGrid.material.dispose();
-      lowTierGrid.geometry.dispose();
       floatingDust.dispose();
       characterAura.dispose();
       (postFxRuntime?.composer as { dispose?: () => void } | undefined)?.dispose?.();
