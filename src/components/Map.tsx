@@ -314,6 +314,8 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
     const onMarkerKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'e' || e.key === 'E') {
+        if (activePageRef.current === 'contact') return; // Disable 'E' to go back specifically on Contact page
+        
         if (activePageRef.current) onCloseRef.current?.();
         else onMarkerActivate();
       }
