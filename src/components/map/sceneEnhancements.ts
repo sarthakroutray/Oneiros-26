@@ -133,6 +133,10 @@ export const registerModelEnhancements = (
     if (!material) return;
 
     const name = node.name.toLowerCase();
+
+    // ── Skip all enhancements for the logo — preserve it exactly as exported ──
+    if (name.includes('logo')) return;
+
     material.roughness = Math.min(0.92, material.roughness + 0.08);
 
     if (options?.isCharacter) {
