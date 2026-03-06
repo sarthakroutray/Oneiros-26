@@ -916,10 +916,12 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     const enablePostProcessing = async () => {
-      // Skip post-processing entirely on mobile — single biggest GPU cost
-      if (isMobile) return;
       const module = await import('./map/postprocessing');
-      postFxRuntime = module.createPostProcessing(renderer, scene, camera, qualityProfile);
+      postFxRuntime = module.createPostProcessing(renderer, scene, camera, qualityProfile, {
+        renderScale: isMobile ? 0.72 : 1,
+        bloomStrengthMultiplier: isMobile ? 0.85 : 1,
+        vignetteDarkness: isMobile ? 0.24 : undefined,
+      });
       postFxRuntime.setSize(window.innerWidth, window.innerHeight);
     };
 

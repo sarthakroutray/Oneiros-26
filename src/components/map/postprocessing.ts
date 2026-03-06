@@ -39,13 +39,21 @@ export const createPostProcessing = (
   scene: THREE.Scene,
   camera: THREE.Camera,
   quality: QualityProfile,
+  options?: {
+    renderScale?: number;
+    bloomStrengthMultiplier?: number;
+    vignetteOffset?: number;
+    vignetteDarkness?: number;
+  },
 ) => {
+  const renderScale = options?.renderScale ?? 1;
+  const bloomStrengthMultiplier = options?.bloomStrengthMultiplier ?? 1;
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
 
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    quality.bloomStrength,
+    quality.bloomStrength * bloomStrengthMultiplier,
     quality.bloomRadius,
     quality.bloomThreshold,
   );
@@ -53,11 +61,19 @@ export const createPostProcessing = (
   composer.addPass(bloom);
 
   const vignette = new ShaderPass(VignetteShader);
+  if (typeof options?.vignetteOffset === 'number') {
+    vignette.uniforms.offset.value = options.vignetteOffset;
+  }
+  if (typeof options?.vignetteDarkness === 'number') {
+    vignette.uniforms.darkness.value = options.vignetteDarkness;
+  }
   composer.addPass(vignette);
 
   const setSize = (w: number, h: number) => {
-    composer.setSize(w, h);
-    bloom.setSize(w, h);
+    const scaledWidth = Math.max(1, Math.round(w * renderScale));
+    const scaledHeight = Math.max(1, Math.round(h * renderScale));
+    composer.setSize(scaledWidth, scaledHeight);
+    bloom.setSize(scaledWidth, scaledHeight);
   };
 
   const setBloomEnabled = (enabled: boolean) => {
