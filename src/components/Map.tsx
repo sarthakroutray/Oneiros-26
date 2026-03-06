@@ -438,7 +438,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
     const onOrientationChange = () => setTimeout(onResize, 100);
     const onWheel = (e: WheelEvent) => {
-      if (isIntroActive) return;
+      if (isIntroActive || activePageRef.current) return;
       camDist = clampCamDist(camDist + e.deltaY * 0.02);
     };
     window.addEventListener('resize', onResize);
@@ -455,10 +455,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     // ── MOUSE DRAG ────────────────────────────────────────────────────────────
     let isDragging = false;
     let lastMX = 0, lastMY = 0;
-    const onMouseDown = (e: MouseEvent) => { isDragging = true; lastMX = e.clientX; lastMY = e.clientY; };
+    const onMouseDown = (e: MouseEvent) => { if (activePageRef.current) return; isDragging = true; lastMX = e.clientX; lastMY = e.clientY; };
     const onMouseUp   = () => { isDragging = false; };
     const onMouseMove = (e: MouseEvent) => {
-      if (!isDragging || isIntroActive) return;
+      if (!isDragging || isIntroActive || activePageRef.current) return;
       camYaw  -= (e.clientX - lastMX) * 0.004;
       camPitch = Math.max(CAM_PITCH_MIN, Math.min(CAM_PITCH_MAX, camPitch + (e.clientY - lastMY) * 0.004));
       lastMX = e.clientX; lastMY = e.clientY;
@@ -640,7 +640,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
       // ── INPUT ───────────────────────────────────────────────────────────────
       let inputX = 0, inputY = 0, moving = false, sprint = false;
-      if (!isIntroActive) {
+      if (!isIntroActive && !activePageRef.current) {
         const kbX = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
         const kbY = (keys.w ? 1 : 0) - (keys.s ? 1 : 0);
         inputX = kbX !== 0 ? kbX : joyVec.x;
@@ -779,7 +779,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         if (dist < MARKER_INTERACT_RADIUS && dist < closestDist) { closestDist = dist; closestIdx = mi; }
       }
 
-      if (closestIdx !== activeMarkerIdx) {
+      if (activePageRef.current) {
+        // Hide marker prompt while a page overlay is open
+        setMarkerPromptState(markerPrompt, null, false);
+      } else if (closestIdx !== activeMarkerIdx) {
         activeMarkerIdx = closestIdx;
         if (closestIdx >= 0) setMarkerPromptState(markerPrompt, markers[closestIdx], closestDist <= MARKER_ACTIVATE_RADIUS);
         else setMarkerPromptState(markerPrompt, null, false);
@@ -962,6 +965,27 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       if (container.contains(canvas)) container.removeChild(canvas);
     };
   }, []);
+
+  // Hide joystick / HUD / state badge when a page overlay is open
+  useEffect(() => {
+    const joystickZone = document.getElementById('joystick-zone');
+    const hudEl        = document.getElementById('hud');
+    const stateEl      = document.getElementById('state');
+    const canvas       = mountRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+
+    if (activePage) {
+      if (joystickZone) joystickZone.style.display = 'none';
+      if (hudEl)        hudEl.style.display        = 'none';
+      if (stateEl)      stateEl.style.display      = 'none';
+      if (canvas)       canvas.style.pointerEvents = 'none';
+    } else {
+      if (canvas) canvas.style.pointerEvents = 'auto';
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      if (isTouch && joystickZone) joystickZone.style.display = 'flex';
+      if (hudEl)   hudEl.style.display   = 'flex';
+      if (stateEl) stateEl.style.display = 'block';
+    }
+  }, [activePage]);
 
   return <div ref={mountRef} style={{ position: 'fixed', inset: 0, zIndex: 2 }} />;
 }
