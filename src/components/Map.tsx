@@ -9,7 +9,6 @@ import DecryptedText from './DecryptedText';
 import { applyAtmosphereFog, createFloatingDust } from './map/atmosphere';
 import { createNeonGridMaterial } from './map/neon';
 import {
-  createCharacterAura,
   createEnhancementState,
   registerModelEnhancements,
   setupCinematicLights,
@@ -65,12 +64,16 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const isDev = import.meta.env.DEV;
     const logDev = (...args: unknown[]) => { if (isDev) console.log(...args); };
 
+    // ── DETECT MOBILE ─────────────────────────────────────────────────────────
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      || ('ontouchstart' in window && window.innerWidth < 1024);
+
     // ── UI DOM REFS ───────────────────────────────────────────────────────────
-    const stateEl = document.getElementById('state') as HTMLElement | null;
+    const stateEl      = document.getElementById('state')         as HTMLElement | null;
     const joystickZone = document.getElementById('joystick-zone') as HTMLElement | null;
     const joystickBase = document.getElementById('joystick-base') as HTMLElement | null;
     const joystickKnob = document.getElementById('joystick-knob') as HTMLElement | null;
-    const hudEl = document.getElementById('hud') as HTMLElement | null;
+    const hudEl        = document.getElementById('hud')           as HTMLElement | null;
 
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -80,30 +83,39 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       if (isTouch && joystickZone) joystickZone.style.display = 'flex';
     };
 
-    let isIntroActive = false;
-    let introStartTime = 0;
+    let isIntroActive    = false;
+    let introStartTime   = 0;
     let introInitialized = false;
     const INTRO_DURATION = 4.5;
 
     const startIntro = () => {
-      isIntroActive = true;
+      isIntroActive    = true;
       introInitialized = false;
-      if (stateEl) stateEl.style.display = 'none';
-      if (hudEl) hudEl.style.display = 'none';
+      if (stateEl)      stateEl.style.display     = 'none';
+      if (hudEl)        hudEl.style.display        = 'none';
       if (joystickZone) joystickZone.style.display = 'none';
     };
     window.addEventListener('start-experience', startIntro);
 
     // ── RENDERER ──────────────────────────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    let qualityProfile = qualityProfileFor('HIGH');
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, qualityProfile.pixelRatioCap));
+    const renderer = new THREE.WebGLRenderer({
+      antialias: !isMobile,         // disable MSAA on mobile — big fill-rate win
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
+
+    // Use MEDIUM on mobile, HIGH on desktop
+    let qualityProfile = qualityProfileFor(isMobile ? 'MEDIUM' : 'HIGH');
+
+    // Hard-cap pixel ratio: 1.5 on mobile, 2 on desktop
+    const PR_CAP = isMobile ? 1.5 : 2.0;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, PR_CAP, qualityProfile.pixelRatioCap));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(new THREE.Color(0x020205), 1);
-    renderer.shadowMap.enabled = qualityProfile.enableDynamicLights;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.shadowMap.enabled   = qualityProfile.enableDynamicLights && !isMobile;
+    renderer.shadowMap.type      = THREE.PCFShadowMap;
+    renderer.outputColorSpace    = THREE.SRGBColorSpace;
+    renderer.toneMapping         = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.24;
 
     const canvas = renderer.domElement;
@@ -130,9 +142,9 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
     let postFxRuntime: PostFxRuntime | null = null;
 
-    let camYaw = Math.PI;
+    let camYaw   = Math.PI;
     let camPitch = 0.1;
-    let camDist = CAM_DIST_DEFAULT;
+    let camDist  = CAM_DIST_DEFAULT;
     const camCurrent = new THREE.Vector3(0, 4, camDist);
 
     const clampCamDist = (v: number) => Math.max(CAM_DIST_MIN, Math.min(CAM_DIST_MAX, v));
@@ -141,24 +153,54 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     setupCinematicLights(scene, qualityProfile);
 
     // ── FLOATING DUST ─────────────────────────────────────────────────────────
-    const dustCount = Math.max(48, Math.floor(180 * qualityProfile.particleCountScale));
+    const dustCount = isMobile
+      ? Math.max(24, Math.floor(60  * qualityProfile.particleCountScale))
+      : Math.max(48, Math.floor(180 * qualityProfile.particleCountScale));
     const floatingDust = createFloatingDust(scene, dustCount);
     floatingDust.points.visible = qualityProfile.enableParticles;
 
     const enhancementState = createEnhancementState();
-    const characterAura = createCharacterAura(scene);
+
+    // ── MINIMAL CHARACTER AURA ────────────────────────────────────────────────
+    // Bare minimum: single faint white ground disc — no blue, no particles
+    const _auraGeo  = new THREE.CircleGeometry(0.55, 24);
+    const _auraMat  = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0xffffff),
+      transparent: true,
+      opacity: 0.04,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const _auraMesh = new THREE.Mesh(_auraGeo, _auraMat);
+    _auraMesh.rotation.x = -Math.PI / 2;
+    _auraMesh.position.y  = GROUND_Y + 0.02;
+    _auraMesh.renderOrder = 0;
+    scene.add(_auraMesh);
+
+    const characterAura = {
+      update: (pos: THREE.Vector3, _elapsed: number) => {
+        _auraMesh.position.x = pos.x;
+        _auraMesh.position.z = pos.z;
+      },
+      dispose: () => {
+        _auraGeo.dispose();
+        _auraMat.dispose();
+        scene.remove(_auraMesh);
+      },
+    };
 
     // ── MYSTICAL EMBERS ───────────────────────────────────────────────────────
-    // Reduced from 400 → 220 to cut per-frame typed-array work nearly in half
-    const EMBER_COUNT = Math.max(1, Math.floor(220 * qualityProfile.particleCountScale));
+    const EMBER_COUNT = isMobile
+      ? Math.max(1, Math.floor(80  * qualityProfile.particleCountScale))
+      : Math.max(1, Math.floor(220 * qualityProfile.particleCountScale));
 
-    const ePos = new Float32Array(EMBER_COUNT * 3);
-    const eVel = new Float32Array(EMBER_COUNT * 3);
-    const eCol = new Float32Array(EMBER_COUNT * 3);
+    const ePos  = new Float32Array(EMBER_COUNT * 3);
+    const eVel  = new Float32Array(EMBER_COUNT * 3);
+    const eCol  = new Float32Array(EMBER_COUNT * 3);
     const eBase = new Float32Array(EMBER_COUNT * 3);
-    const eSz = new Float32Array(EMBER_COUNT);
+    const eSz   = new Float32Array(EMBER_COUNT);
     const eLife = new Float32Array(EMBER_COUNT);
-    const eMax = new Float32Array(EMBER_COUNT);
+    const eMax  = new Float32Array(EMBER_COUNT);
 
     const PALETTE = [
       new THREE.Color(0x0077ff),
@@ -173,50 +215,50 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     ];
 
     const resetEmber = (i: number, scatterStart = false) => {
-      const angle = Math.random() * Math.PI * 2;
+      const angle  = Math.random() * Math.PI * 2;
       const radius = Math.sqrt(Math.random()) * 44;
-      ePos[i * 3] = Math.cos(angle) * radius;
+      ePos[i * 3]     = Math.cos(angle) * radius;
       ePos[i * 3 + 1] = scatterStart ? Math.random() * 8 : 0.05 + Math.random() * 0.3;
       ePos[i * 3 + 2] = Math.sin(angle) * radius;
 
-      eVel[i * 3] = (Math.random() - 0.5) * 0.18;
+      eVel[i * 3]     = (Math.random() - 0.5) * 0.18;
       eVel[i * 3 + 1] = 0.18 + Math.random() * 0.52;
       eVel[i * 3 + 2] = (Math.random() - 0.5) * 0.18;
 
-      eMax[i] = 7.0 + Math.random() * 9.0;
+      eMax[i]  = 7.0 + Math.random() * 9.0;
       eLife[i] = scatterStart ? Math.random() * eMax[i] : 0;
-      eSz[i] = 0.06 + Math.random() * 0.22;
+      eSz[i]   = 0.06 + Math.random() * 0.22;
 
       const c = PALETTE[Math.floor(Math.random() * PALETTE.length)].clone();
       c.multiplyScalar(0.75 + Math.random() * 0.5);
-      eBase[i * 3] = c.r;
+      eBase[i * 3]     = c.r;
       eBase[i * 3 + 1] = c.g;
       eBase[i * 3 + 2] = c.b;
-      eCol[i * 3] = c.r;
-      eCol[i * 3 + 1] = c.g;
-      eCol[i * 3 + 2] = c.b;
+      eCol[i * 3]      = c.r;
+      eCol[i * 3 + 1]  = c.g;
+      eCol[i * 3 + 2]  = c.b;
     };
 
     for (let i = 0; i < EMBER_COUNT; i++) resetEmber(i, true);
 
-    const emberGeo = new THREE.BufferGeometry();
+    const emberGeo     = new THREE.BufferGeometry();
     const emberPosAttr = new THREE.BufferAttribute(ePos, 3);
     const emberColAttr = new THREE.BufferAttribute(eCol, 3);
-    const emberSzAttr = new THREE.BufferAttribute(eSz, 1);
+    const emberSzAttr  = new THREE.BufferAttribute(eSz, 1);
     emberGeo.setAttribute('position', emberPosAttr);
-    emberGeo.setAttribute('color', emberColAttr);
-    emberGeo.setAttribute('size', emberSzAttr);
+    emberGeo.setAttribute('color',    emberColAttr);
+    emberGeo.setAttribute('size',     emberSzAttr);
 
     const spriteCanvas = document.createElement('canvas');
     spriteCanvas.width = spriteCanvas.height = 64;
     const sCtx = spriteCanvas.getContext('2d')!;
-    const grd = sCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grd.addColorStop(0, 'rgba(220,240,255,1.0)');
+    const grd  = sCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0,    'rgba(220,240,255,1.0)');
     grd.addColorStop(0.15, 'rgba(80,200,255,0.95)');
     grd.addColorStop(0.38, 'rgba(40,100,255,0.55)');
     grd.addColorStop(0.60, 'rgba(120,60,255,0.20)');
     grd.addColorStop(0.82, 'rgba(0,20,80,0.06)');
-    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    grd.addColorStop(1,    'rgba(0,0,0,0)');
     sCtx.fillStyle = grd;
     sCtx.fillRect(0, 0, 64, 64);
     const spriteTex = new THREE.CanvasTexture(spriteCanvas);
@@ -243,7 +285,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
     const onMarkerActivate = () => {
       if (activeMarkerIdx < 0) return;
-      const m = markers[activeMarkerIdx];
+      const m  = markers[activeMarkerIdx];
       const dx = charPos.x - m.pos.x;
       const dz = charPos.z - m.pos.z;
       if (Math.sqrt(dx * dx + dz * dz) <= MARKER_ACTIVATE_RADIUS) {
@@ -264,36 +306,37 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     markerPrompt.addEventListener('click', onMarkerTap);
 
     // ── NEON GRID FLOOR ───────────────────────────────────────────────────────
-    const surfaceGeo = new THREE.PlaneGeometry(300, 300, 1, 1);
+    const surfaceGeo    = new THREE.PlaneGeometry(300, 300, 1, 1);
     const shaderGridMat = createNeonGridMaterial();
-    const basicGridMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x37215f) });
-    let gridUsesShader = qualityProfile.enableShaderGrid;
+    const basicGridMat  = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x37215f) });
+    // Force basic grid on mobile — shader grid is fill-rate heavy
+    let gridUsesShader  = isMobile ? false : qualityProfile.enableShaderGrid;
     let surfaceMat: THREE.Material = gridUsesShader ? shaderGridMat : basicGridMat;
 
     const neonSurface = new THREE.Mesh(surfaceGeo, surfaceMat);
-    neonSurface.rotation.x = -Math.PI / 2;
-    neonSurface.position.y = GROUND_Y + 0.01;
+    neonSurface.rotation.x    = -Math.PI / 2;
+    neonSurface.position.y    = GROUND_Y + 0.01;
     neonSurface.receiveShadow = false;
     scene.add(neonSurface);
 
     const applyQualityProfile = (nextProfile: QualityProfile) => {
       qualityProfile = nextProfile;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, qualityProfile.pixelRatioCap));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, PR_CAP, qualityProfile.pixelRatioCap));
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.shadowMap.enabled = qualityProfile.enableDynamicLights;
+      renderer.shadowMap.enabled     = qualityProfile.enableDynamicLights && !isMobile;
       renderer.shadowMap.needsUpdate = true;
-      renderer.toneMappingExposure = 1.24;
+      renderer.toneMappingExposure   = 1.24;
       applyAtmosphereFog(scene, 0.0062);
 
-      const shouldUseShader = qualityProfile.enableShaderGrid;
+      const shouldUseShader = isMobile ? false : qualityProfile.enableShaderGrid;
       if (shouldUseShader !== gridUsesShader) {
-        gridUsesShader = shouldUseShader;
-        surfaceMat = gridUsesShader ? shaderGridMat : basicGridMat;
+        gridUsesShader       = shouldUseShader;
+        surfaceMat           = gridUsesShader ? shaderGridMat : basicGridMat;
         neonSurface.material = surfaceMat;
       }
 
-      emberPoints.visible = qualityProfile.enableParticles;
-      ssObj.visible = qualityProfile.enableParticles;
+      emberPoints.visible         = qualityProfile.enableParticles;
+      ssObj.visible               = qualityProfile.enableParticles;
       floatingDust.points.visible = qualityProfile.enableParticles;
 
       if (postFxRuntime) {
@@ -303,49 +346,49 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     // ── STARS (SKY) ───────────────────────────────────────────────────────────
-    const STARS_COUNT = 3000;
-    const sPos = new Float32Array(STARS_COUNT * 3);
+    const STARS_COUNT = isMobile ? 1000 : 3000;
+    const sPos     = new Float32Array(STARS_COUNT * 3);
     const sBaseCol = new Float32Array(STARS_COUNT * 3);
-    const sPhase = new Float32Array(STARS_COUNT);
-    const sSz = new Float32Array(STARS_COUNT);
+    const sPhase   = new Float32Array(STARS_COUNT);
+    const sSz      = new Float32Array(STARS_COUNT);
 
     for (let i = 0; i < STARS_COUNT; i++) {
       const radius = 120 + Math.random() * 80;
-      const theta = 2 * Math.PI * Math.random();
-      const phi = Math.acos(Math.random());
+      const theta  = 2 * Math.PI * Math.random();
+      const phi    = Math.acos(Math.random());
 
-      sPos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      sPos[i * 3]     = radius * Math.sin(phi) * Math.cos(theta);
       sPos[i * 3 + 1] = radius * Math.cos(phi) - 10;
       sPos[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
 
       const intensity = 0.5 + Math.random() * 0.5;
       const colorType = Math.random();
       const c = new THREE.Color(0xffffff);
-      if (colorType > 0.8) c.setHex(0xaaaaFF);
+      if      (colorType > 0.8) c.setHex(0xaaaaFF);
       else if (colorType > 0.6) c.setHex(0xffddaa);
 
-      sBaseCol[i * 3] = c.r * intensity;
+      sBaseCol[i * 3]     = c.r * intensity;
       sBaseCol[i * 3 + 1] = c.g * intensity;
       sBaseCol[i * 3 + 2] = c.b * intensity;
 
       sPhase[i] = Math.random() * Math.PI * 2;
-      sSz[i] = 2.0 + Math.random() * 4.0;
+      sSz[i]    = 2.0 + Math.random() * 4.0;
     }
 
     const starsGeo = new THREE.BufferGeometry();
     starsGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-    starsGeo.setAttribute('color', new THREE.BufferAttribute(sBaseCol, 3));
-    starsGeo.setAttribute('phase', new THREE.BufferAttribute(sPhase, 1));
-    starsGeo.setAttribute('size', new THREE.BufferAttribute(sSz, 1));
+    starsGeo.setAttribute('color',    new THREE.BufferAttribute(sBaseCol, 3));
+    starsGeo.setAttribute('phase',    new THREE.BufferAttribute(sPhase, 1));
+    starsGeo.setAttribute('size',     new THREE.BufferAttribute(sSz, 1));
 
     const starCanvas = document.createElement('canvas');
     starCanvas.width = starCanvas.height = 32;
     const starCtx = starCanvas.getContext('2d')!;
     const starGrd = starCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    starGrd.addColorStop(0, 'rgba(255,255,255,1)');
+    starGrd.addColorStop(0,   'rgba(255,255,255,1)');
     starGrd.addColorStop(0.2, 'rgba(255,255,255,0.8)');
     starGrd.addColorStop(0.5, 'rgba(255,255,255,0.2)');
-    starGrd.addColorStop(1, 'rgba(255,255,255,0)');
+    starGrd.addColorStop(1,   'rgba(255,255,255,0)');
     starCtx.fillStyle = starGrd;
     starCtx.fillRect(0, 0, 32, 32);
     const starTex = new THREE.CanvasTexture(starCanvas);
@@ -384,7 +427,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
     // ── SHOOTING STARS ────────────────────────────────────────────────────────
     const ssGeo = new THREE.BufferGeometry();
-    const MAX_SHOOTING_STARS = 15;
+    const MAX_SHOOTING_STARS = isMobile ? 5 : 15;
     const ssPos = new Float32Array(MAX_SHOOTING_STARS * 6);
     const ssCol = new Float32Array(MAX_SHOOTING_STARS * 6);
 
@@ -403,7 +446,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     }));
 
     ssGeo.setAttribute('position', new THREE.BufferAttribute(ssPos, 3));
-    ssGeo.setAttribute('color', new THREE.BufferAttribute(ssCol, 3));
+    ssGeo.setAttribute('color',    new THREE.BufferAttribute(ssCol, 3));
 
     const ssMat = new THREE.LineBasicMaterial({
       vertexColors: true, transparent: true,
@@ -414,16 +457,16 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     scene.add(ssObj);
 
     const resetShootingStar = (index: number) => {
-      const d = ssData[index];
-      d.active = true;
-      const r = 120 + Math.random() * 50;
+      const d     = ssData[index];
+      d.active    = true;
+      const r     = 120 + Math.random() * 50;
       const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI * 0.25 + 0.05;
+      const phi   = Math.random() * Math.PI * 0.25 + 0.05;
       d.pos.set(r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
       d.dir.set((Math.random() - 0.5) * 2, -Math.random() * 0.2 - 0.05, (Math.random() - 0.5) * 2).normalize();
-      d.speed = 150 + Math.random() * 100;
-      d.length = 15 + Math.random() * 25;
-      d.age = 0;
+      d.speed  = 150 + Math.random() * 100;
+      d.length = 15  + Math.random() * 25;
+      d.age    = 0;
       d.maxAge = 0.5 + Math.random() * 0.8;
       const i3 = index * 6;
       ssCol[i3] = 1; ssCol[i3 + 1] = 1; ssCol[i3 + 2] = 1;
@@ -451,23 +494,26 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     // ── KEYBOARD INPUT ────────────────────────────────────────────────────────
     const keys = createMovementKeys();
     const onKeyDown = (e: KeyboardEvent) => updateMovementKey(keys, e.key, true);
-    const onKeyUp = (e: KeyboardEvent) => updateMovementKey(keys, e.key, false);
+    const onKeyUp   = (e: KeyboardEvent) => updateMovementKey(keys, e.key, false);
     window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('keyup',   onKeyUp);
 
     // ── MOUSE DRAG ────────────────────────────────────────────────────────────
     let isDragging = false;
     let lastMX = 0, lastMY = 0;
-    const onMouseDown = (e: MouseEvent) => { if (activePageRef.current) return; isDragging = true; lastMX = e.clientX; lastMY = e.clientY; };
-    const onMouseUp = () => { isDragging = false; };
+    const onMouseDown = (e: MouseEvent) => {
+      if (activePageRef.current) return;
+      isDragging = true; lastMX = e.clientX; lastMY = e.clientY;
+    };
+    const onMouseUp   = () => { isDragging = false; };
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragging || isIntroActive || activePageRef.current) return;
-      camYaw -= (e.clientX - lastMX) * 0.004;
+      camYaw  -= (e.clientX - lastMX) * 0.004;
       camPitch = Math.max(CAM_PITCH_MIN, Math.min(CAM_PITCH_MAX, camPitch + (e.clientY - lastMY) * 0.004));
       lastMX = e.clientX; lastMY = e.clientY;
     };
     window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mouseup',   onMouseUp);
     window.addEventListener('mousemove', onMouseMove);
 
     // ── MOBILE JOYSTICK ───────────────────────────────────────────────────────
@@ -483,16 +529,16 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     const moveKnob = (dx: number, dy: number) => {
-      const len = Math.sqrt(dx * dx + dy * dy);
+      const len     = Math.sqrt(dx * dx + dy * dy);
       const clamped = Math.min(len, JOY_MAX);
-      const angle = Math.atan2(dy, dx);
+      const angle   = Math.atan2(dy, dx);
       const kx = Math.cos(angle) * clamped;
       const ky = Math.sin(angle) * clamped;
       if (joystickKnob) {
         joystickKnob.style.transform = `translate(calc(-50% + ${kx}px), calc(-50% + ${ky}px))`;
         joystickKnob.classList.add('active');
       }
-      joyMag = Math.min(len / JOY_MAX, 1.0);
+      joyMag   = Math.min(len / JOY_MAX, 1.0);
       joyVec.x = kx / JOY_MAX;
       joyVec.y = ky / JOY_MAX;
     };
@@ -552,7 +598,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       for (const t of Array.from(e.changedTouches)) {
         if (t.identifier === joyId) { const c = joyCenter(); moveKnob(t.clientX - c.x, t.clientY - c.y); }
         else if (t.identifier === camTouchId && pinchId2 === null && !isIntroActive) {
-          camYaw -= (t.clientX - lastCamTX) * 0.004;
+          camYaw  -= (t.clientX - lastCamTX) * 0.004;
           camPitch = Math.max(CAM_PITCH_MIN, Math.min(CAM_PITCH_MAX, camPitch + (t.clientY - lastCamTY) * 0.004));
           lastCamTX = t.clientX; lastCamTY = t.clientY;
         }
@@ -562,8 +608,8 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         const tB = getTouchById(e.touches, pinchId2);
         if (tA && tB) {
           const dx = tA.clientX - tB.clientX; const dy = tA.clientY - tB.clientY;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          camDist = clampCamDist(camDist - (d - pinchDist) * 0.04);
+          const d  = Math.sqrt(dx * dx + dy * dy);
+          camDist   = clampCamDist(camDist - (d - pinchDist) * 0.04);
           pinchDist = d;
         }
       }
@@ -571,58 +617,67 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
     const onTouchEndCancel = (e: TouchEvent) => {
       for (const t of Array.from(e.changedTouches)) {
-        if (t.identifier === joyId) releaseJoy();
+        if (t.identifier === joyId)      releaseJoy();
         if (t.identifier === camTouchId) { camTouchId = null; pinchId2 = null; }
-        if (t.identifier === pinchId2) pinchId2 = null;
+        if (t.identifier === pinchId2)   pinchId2 = null;
       }
     };
 
-    window.addEventListener('touchstart', onTouchStart, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEndCancel, { passive: true });
+    window.addEventListener('touchstart',  onTouchStart,     { passive: true });
+    window.addEventListener('touchmove',   onTouchMove,      { passive: true });
+    window.addEventListener('touchend',    onTouchEndCancel, { passive: true });
     window.addEventListener('touchcancel', onTouchEndCancel, { passive: true });
 
     // ── CHARACTER STATE ───────────────────────────────────────────────────────
-    const armatures: THREE.Object3D[] = [];
-    const mixers: THREE.AnimationMixer[] = [];
+    let charArmature: THREE.Object3D | null = null;
+    let charMixer:    THREE.AnimationMixer | null = null;
+    const charActions: (THREE.AnimationAction | null)[] = [null, null, null];
     let stateIdx = STATE_IDLE;
     const charPos = new THREE.Vector3(0, GROUND_Y, 0);
-    let charRotY = 0;
-    let charH = 1.8;
+    let charRotY  = 0;
+    let charH     = 1.8;
 
     const setCharState = (idx: number) => {
-      if (idx === stateIdx || armatures.length === 0) return;
-      armatures[stateIdx].visible = false;
-      armatures[idx].visible = true;
+      if (idx === stateIdx || !charMixer) return;
+      const from = charActions[stateIdx];
+      const to   = charActions[idx];
+      if (from && to) {
+        to.reset().play();
+        from.crossFadeTo(to, 0.15, true);
+      }
       stateIdx = idx;
       if (stateEl) { stateEl.textContent = STATE_NAMES[idx]; stateEl.style.color = STATE_COLORS[idx]; }
     };
 
     const applyCharTransform = () => {
-      for (const arm of armatures) { arm.position.copy(charPos); arm.rotation.y = charRotY; }
+      if (!charArmature) return;
+      charArmature.position.set(charPos.x, charPos.y, charPos.z);
+      charArmature.rotation.y = charRotY;
     };
 
     // ── RENDER LOOP ───────────────────────────────────────────────────────────
-    const timer = new THREE.Timer();
-    const moveDir = new THREE.Vector3();
-    const camFwd = new THREE.Vector3();
+    const timer    = new THREE.Timer();
+    const moveDir  = new THREE.Vector3();
+    const camFwd   = new THREE.Vector3();
     const camRight = new THREE.Vector3();
-    const UP = new THREE.Vector3(0, 1, 0);
+    const UP       = new THREE.Vector3(0, 1, 0);
 
-    // ── Pre-allocated scratch vectors — never allocate inside tick() ──────────
-    const _lookAt = new THREE.Vector3();
+    // Pre-allocated scratch vectors — never allocate inside tick()
+    const _lookAt     = new THREE.Vector3();
     const _camDesired = new THREE.Vector3();
-    const _ssTail = new THREE.Vector3();
+    const _ssTail     = new THREE.Vector3();
 
     let animFrameId = 0;
+    let frameCount  = 0;
 
     const tick = () => {
       animFrameId = requestAnimationFrame(tick);
       timer.update();
-      const dt = Math.min(timer.getDelta(), 0.05);
+      frameCount++;
+      const dt      = Math.min(timer.getDelta(), 0.05);
       const elapsed = timer.getElapsed();
 
-      for (const mx of mixers) mx.update(dt);
+      charMixer?.update(dt);
 
       // ── INTRO ───────────────────────────────────────────────────────────────
       if (isIntroActive) {
@@ -634,10 +689,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
           camYaw = Math.PI; camPitch = 0.1; camDist = CAM_DIST_DEFAULT;
         } else {
           const progress = introElapsed / INTRO_DURATION;
-          const eased = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-          camYaw = Math.PI - eased * Math.PI * 2;
+          const eased    = progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+          camYaw   = Math.PI - eased * Math.PI * 2;
           camPitch = 0.1 + Math.sin(progress * Math.PI) * 0.3;
-          camDist = CAM_DIST_DEFAULT + Math.sin(progress * Math.PI) * 12;
+          camDist  = CAM_DIST_DEFAULT + Math.sin(progress * Math.PI) * 12;
         }
       }
 
@@ -654,7 +709,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         if (joyId !== null) setJoySprintVisual(joySprint);
       }
 
-      if (armatures.length > 0) setCharState(moving ? (sprint ? STATE_RUN : STATE_WALK) : STATE_IDLE);
+      if (charArmature) setCharState(moving ? (sprint ? STATE_RUN : STATE_WALK) : STATE_IDLE);
 
       // ── CHARACTER MOVEMENT ───────────────────────────────────────────────────
       if (moving) {
@@ -678,7 +733,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
         const targetA = Math.atan2(moveDir.x, moveDir.z);
         let diff = targetA - charRotY;
-        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff >  Math.PI) diff -= Math.PI * 2;
         while (diff < -Math.PI) diff += Math.PI * 2;
         charRotY += diff * Math.min(TURN_SPEED * dt, 1.0);
       }
@@ -687,26 +742,33 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       if (moving && !isDragging && camTouchId === null && !isIntroActive) {
         const targetCamYaw = charRotY + Math.PI;
         let yawDiff = targetCamYaw - camYaw;
-        while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
+        while (yawDiff >  Math.PI) yawDiff -= Math.PI * 2;
         while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
         camYaw += yawDiff * Math.min(3.0 * dt, 1.0);
       }
 
-      if (armatures.length > 0) {
+      if (charArmature) {
         const idleY = moving ? 0 : Math.sin(elapsed * 1.6) * 0.065;
         charPos.y = GROUND_Y + idleY;
         applyCharTransform();
         characterAura.update(charPos, elapsed);
       }
 
-      if (qualityProfile.enableParticles) floatingDust.update(dt, charPos);
-      updateModelEnhancements(enhancementState, elapsed);
+      // Throttle particle + enhancement updates to every other frame on mobile
+      const doFullUpdate = !isMobile || (frameCount % 2 === 0);
+
+      if (qualityProfile.enableParticles) {
+        floatingDust.update(doFullUpdate ? dt : 0, charPos);
+      }
+      if (doFullUpdate) updateModelEnhancements(enhancementState, elapsed);
 
       // ── STARS ─────────────────────────────────────────────────────────────────
       starsMat.uniforms.time.value += dt;
-      starsObj.position.x = camCurrent.x * 0.03;
-      starsObj.position.z = camCurrent.z * 0.03;
-      starsObj.rotation.y += dt * 0.015;
+      if (!isMobile || frameCount % 3 === 0) {
+        starsObj.position.x  = camCurrent.x * 0.03;
+        starsObj.position.z  = camCurrent.z * 0.03;
+        starsObj.rotation.y += dt * 0.015 * (isMobile ? 3 : 1);
+      }
 
       // ── NEON GRID ─────────────────────────────────────────────────────────────
       if (gridUsesShader && surfaceMat instanceof THREE.ShaderMaterial && surfaceMat.uniforms.uTime) {
@@ -714,7 +776,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       }
 
       // ── SHOOTING STARS ────────────────────────────────────────────────────────
-      if (qualityProfile.enableParticles) {
+      if (qualityProfile.enableParticles && doFullUpdate) {
         for (let i = 0; i < MAX_SHOOTING_STARS; i++) {
           const d = ssData[i];
           if (!d.active) { if (Math.random() < 0.015) resetShootingStar(i); continue; }
@@ -726,64 +788,61 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
             continue;
           }
           d.pos.addScaledVector(d.dir, d.speed * dt);
-          // Re-use _ssTail instead of d.pos.clone() — eliminates per-frame allocation
           _ssTail.copy(d.pos).addScaledVector(d.dir, -d.length);
           const idx = i * 6;
-          ssPos[idx] = d.pos.x; ssPos[idx + 1] = d.pos.y; ssPos[idx + 2] = d.pos.z;
+          ssPos[idx]     = d.pos.x;   ssPos[idx + 1] = d.pos.y;   ssPos[idx + 2] = d.pos.z;
           ssPos[idx + 3] = _ssTail.x; ssPos[idx + 4] = _ssTail.y; ssPos[idx + 5] = _ssTail.z;
           let alpha = 1.0;
-          if (d.age > d.maxAge - 0.2) alpha = (d.maxAge - d.age) / 0.2;
-          else if (d.age < 0.2) alpha = d.age / 0.2;
+          if      (d.age > d.maxAge - 0.2) alpha = (d.maxAge - d.age) / 0.2;
+          else if (d.age < 0.2)            alpha = d.age / 0.2;
           ssCol[idx] = alpha; ssCol[idx + 1] = alpha; ssCol[idx + 2] = alpha;
         }
         ssGeo.attributes.position.needsUpdate = true;
-        ssGeo.attributes.color.needsUpdate = true;
+        ssGeo.attributes.color.needsUpdate    = true;
       }
 
       // ── EMBERS ────────────────────────────────────────────────────────────────
-      if (qualityProfile.enableParticles) {
+      if (qualityProfile.enableParticles && doFullUpdate) {
         for (let i = 0; i < EMBER_COUNT; i++) {
           eLife[i] += dt;
           if (eLife[i] >= eMax[i]) { resetEmber(i, false); continue; }
-          const t = eLife[i] / eMax[i];
+          const t      = eLife[i] / eMax[i];
           const wobble = Math.sin(eLife[i] * 1.1 + i * 0.37) * 0.006;
-          ePos[i * 3] += (eVel[i * 3] + wobble) * dt;
-          ePos[i * 3 + 1] += eVel[i * 3 + 1] * dt * (1 - t * 0.15);
+          ePos[i * 3]     += (eVel[i * 3]     + wobble) * dt;
+          ePos[i * 3 + 1] +=  eVel[i * 3 + 1] * dt * (1 - t * 0.15);
           ePos[i * 3 + 2] += (eVel[i * 3 + 2] + wobble) * dt;
           const alpha = t < 0.10 ? t / 0.10 : t > 0.75 ? 1 - (t - 0.75) / 0.25 : 1.0;
-          eCol[i * 3] = eBase[i * 3] * alpha;
+          eCol[i * 3]     = eBase[i * 3]     * alpha;
           eCol[i * 3 + 1] = eBase[i * 3 + 1] * alpha;
           eCol[i * 3 + 2] = eBase[i * 3 + 2] * alpha;
           eSz[i] = eSz[i] * 0.998 + (0.04 + 0.14 * (1 - t)) * 0.002;
         }
         emberPosAttr.needsUpdate = true;
         emberColAttr.needsUpdate = true;
-        emberSzAttr.needsUpdate = true;
+        emberSzAttr.needsUpdate  = true;
       }
 
       // ── MARKERS ───────────────────────────────────────────────────────────────
       let closestIdx = -1, closestDist = Infinity;
       for (let mi = 0; mi < markers.length; mi++) {
-        const m = markers[mi];
-        const dx = charPos.x - m.pos.x;
-        const dz = charPos.z - m.pos.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
+        const m     = markers[mi];
+        const dx    = charPos.x - m.pos.x;
+        const dz    = charPos.z - m.pos.z;
+        const dist  = Math.sqrt(dx * dx + dz * dz);
         const phase = mi * 1.3;
-        // Pre-compute sin values — avoids redundant trig calls per marker
         const _s1 = Math.sin(elapsed * 1.5 + phase);
         const _s2 = Math.sin(elapsed * 1.2 + phase);
         const _s3 = Math.sin(elapsed * 1.4 + phase);
         const _s4 = Math.sin(elapsed * 1.6 + phase * 0.9);
         m.chevron.rotation.y = elapsed * 1.8 + phase;
         m.chevron.position.y = 8.5 + _s1 * 0.25;
-        (m.beam.material as THREE.MeshBasicMaterial).opacity = 0.11 + _s2 * 0.04;
+        (m.beam.material       as THREE.MeshBasicMaterial).opacity = 0.11 + _s2 * 0.04;
         (m.groundDisc.material as THREE.MeshBasicMaterial).opacity = 0.28 + _s3 * 0.10;
         m.glow.intensity = 1.5 + _s4 * 0.5;
         if (dist < MARKER_INTERACT_RADIUS && dist < closestDist) { closestDist = dist; closestIdx = mi; }
       }
 
       if (activePageRef.current) {
-        // Hide marker prompt while a page overlay is open
         setMarkerPromptState(markerPrompt, null, false);
       } else if (closestIdx !== activeMarkerIdx) {
         activeMarkerIdx = closestIdx;
@@ -795,7 +854,6 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
       // ── CAMERA ────────────────────────────────────────────────────────────────
       const eyeY = charPos.y + charH * 0.55;
-      // Re-use pre-allocated vectors — no new THREE.Vector3() inside tick
       _lookAt.set(charPos.x, eyeY, charPos.z);
 
       _camDesired.set(
@@ -803,9 +861,11 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         charPos.y + camDist * Math.sin(camPitch) + charH * 0.3,
         charPos.z + Math.cos(camYaw) * camDist * Math.cos(camPitch),
       );
-      _camDesired.x += Math.sin(elapsed * 0.55) * 0.07;
-      _camDesired.y += Math.sin(elapsed * 0.90) * 0.05;
-      _camDesired.z += Math.cos(elapsed * 0.60) * 0.05;
+      if (!isMobile) {
+        _camDesired.x += Math.sin(elapsed * 0.55) * 0.07;
+        _camDesired.y += Math.sin(elapsed * 0.90) * 0.05;
+        _camDesired.z += Math.cos(elapsed * 0.60) * 0.05;
+      }
       camCurrent.lerp(_camDesired, CAM_SMOOTH);
 
       const camR2 = camCurrent.lengthSq();
@@ -844,7 +904,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         />
       );
     } catch (e) {
-      console.warn("Failed to render React DecryptedText into loading badge", e);
+      console.warn('Failed to render React DecryptedText into loading badge', e);
       loadingBadge.textContent = 'Preparing 3D experience...';
     }
 
@@ -855,7 +915,9 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     const enablePostProcessing = async () => {
-      const module = await import('./map/postprocessing');
+      // Skip post-processing entirely on mobile — single biggest GPU cost
+      if (isMobile) return;
+      const module  = await import('./map/postprocessing');
       postFxRuntime = module.createPostProcessing(renderer, scene, camera, qualityProfile);
       postFxRuntime.setSize(window.innerWidth, window.innerHeight);
     };
@@ -886,44 +948,71 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       }
 
       const charGltf: LoadedGLTF = charResult.value;
-      logDev('✅ character.glb:', { children: charGltf.scene.children.length, animations: charGltf.animations.length });
-
-      const rootChildren = charGltf.scene.children as THREE.Object3D[];
       const anims = charGltf.animations as THREE.AnimationClip[];
+      logDev('✅ character.glb animations:', anims.map((a, i) => `[${i}] ${a.name} (${a.tracks.length} tracks)`));
 
-      if (rootChildren.length >= 3) {
-        const children = rootChildren.slice();
-        for (let i = 0; i < 3; i++) {
-          const arm = children[i];
-          enableMeshShadows(arm);
-          registerModelEnhancements(arm, enhancementState, { isCharacter: true });
-          scene.add(arm);
-          arm.visible = (i === STATE_IDLE);
-          const mixer = new THREE.AnimationMixer(arm);
-          const clip = anims[i];
-          if (clip) { const action = mixer.clipAction(clip); action.setLoop(THREE.LoopRepeat, Infinity); action.play(); }
-          armatures.push(arm); mixers.push(mixer);
+      // ── CHARACTER SETUP ───────────────────────────────────────────────────
+      const legacyRoot = charGltf.scene.getObjectByName('Character');
+      if (legacyRoot) legacyRoot.visible = false;
+
+      // ── EMISSION TWEAKS ───────────────────────────────────────────────────
+      charGltf.scene.traverse((node: THREE.Object3D) => {
+        if (!(node instanceof THREE.Mesh)) return;
+        const mats = Array.isArray(node.material) ? node.material : [node.material];
+        for (const m of mats) {
+          if (m instanceof THREE.MeshStandardMaterial) {
+            m.emissive.copy(m.color);
+            m.emissiveIntensity = 0.4;
+            m.roughness = Math.max(0.0, m.roughness - 0.25);
+            m.needsUpdate = true;
+          } else if (m instanceof THREE.MeshBasicMaterial) {
+            m.color.multiplyScalar(1.4);
+            m.needsUpdate = true;
+          }
         }
-      } else if (anims.length >= 1) {
-        for (let i = 0; i < Math.min(3, anims.length); i++) {
-          const arm = charGltf.scene.clone(true);
-          enableMeshShadows(arm);
-          registerModelEnhancements(arm, enhancementState, { isCharacter: true });
-          scene.add(arm);
-          arm.visible = (i === STATE_IDLE);
-          const mixer = new THREE.AnimationMixer(arm);
-          const action = mixer.clipAction(anims[i]);
-          action.setLoop(THREE.LoopRepeat, Infinity); action.play();
-          armatures.push(arm); mixers.push(mixer);
-        }
+      });
+      enableMeshShadows(charGltf.scene);
+
+      // ── SCALE: 0.18 — noticeably smaller than the previous 0.26 ──────────
+      const charOuter = new THREE.Group();
+      const charInner = new THREE.Group();
+      charInner.scale.setScalar(0.3);
+      charInner.rotation.y = Math.PI;
+
+      charInner.add(charGltf.scene);
+      charOuter.add(charInner);
+      scene.add(charOuter);
+
+      charMixer    = new THREE.AnimationMixer(charGltf.scene);
+      charArmature = charOuter;
+
+      // ── ANIMATION MAPPING ─────────────────────────────────────────────────
+      const idleClip = anims[3];
+      const walkClip = anims[4];
+
+      if (idleClip) {
+        charActions[STATE_IDLE] = charMixer.clipAction(idleClip);
+        charActions[STATE_IDLE]!.setLoop(THREE.LoopRepeat, Infinity);
+        charActions[STATE_IDLE]!.timeScale = 1.0;
       }
 
-      if (armatures.length > 0) {
-        const bbox = new THREE.Box3().setFromObject(armatures[STATE_IDLE]);
-        charH = Math.max(bbox.getSize(new THREE.Vector3()).y, 1.0);
-        charPos.set(0, GROUND_Y, 0);
-        applyCharTransform();
+      if (walkClip) {
+        charActions[STATE_WALK] = charMixer.clipAction(walkClip);
+        charActions[STATE_WALK]!.setLoop(THREE.LoopRepeat, Infinity);
+        charActions[STATE_WALK]!.timeScale = 1.0;
+
+        charActions[STATE_RUN] = charMixer.clipAction(walkClip);
+        charActions[STATE_RUN]!.setLoop(THREE.LoopRepeat, Infinity);
+        charActions[STATE_RUN]!.timeScale = 1.6;
       }
+
+      charActions[STATE_IDLE]?.play();
+
+      charH = 1.76;
+      charPos.set(0, GROUND_Y, 0);
+      applyCharTransform();
+
+      logDev('✅ character ready | idle:', idleClip?.name, '| walk:', walkClip?.name);
     };
 
     const startAnimationLoop = async () => {
@@ -932,9 +1021,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         setTimeout(() => {
           loadAssets()
             .finally(() => {
-              if (loadingBadgeRoot) {
-                setTimeout(() => loadingBadgeRoot?.unmount(), 0);
-              }
+              if (loadingBadgeRoot) setTimeout(() => loadingBadgeRoot?.unmount(), 0);
               if (document.body.contains(loadingBadge)) document.body.removeChild(loadingBadge);
             })
             .catch(err => console.error('Map asset init error:', err));
@@ -950,36 +1037,34 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     // ── CLEANUP ───────────────────────────────────────────────────────────────
     return () => {
       cancelAnimationFrame(animFrameId);
-      if (stateEl) stateEl.style.display = 'none';
-      if (hudEl) hudEl.style.display = 'none';
+      if (stateEl)      stateEl.style.display     = 'none';
+      if (hudEl)        hudEl.style.display        = 'none';
       if (joystickZone) joystickZone.style.display = 'none';
 
-      window.removeEventListener('start-experience', startIntro);
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('touchstart', onTouchStart);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEndCancel);
-      window.removeEventListener('touchcancel', onTouchEndCancel);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('start-experience',  startIntro);
+      window.removeEventListener('keydown',           onKeyDown);
+      window.removeEventListener('keyup',             onKeyUp);
+      window.removeEventListener('mousedown',         onMouseDown);
+      window.removeEventListener('mouseup',           onMouseUp);
+      window.removeEventListener('mousemove',         onMouseMove);
+      window.removeEventListener('touchstart',        onTouchStart);
+      window.removeEventListener('touchmove',         onTouchMove);
+      window.removeEventListener('touchend',          onTouchEndCancel);
+      window.removeEventListener('touchcancel',       onTouchEndCancel);
+      window.removeEventListener('resize',            onResize);
       window.removeEventListener('orientationchange', onOrientationChange);
-      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('wheel',             onWheel);
       joystickZone?.removeEventListener('touchstart', onJoyTouchStart);
-      window.removeEventListener('keydown', onMarkerKeyDown);
-      markerPrompt.removeEventListener('click', onMarkerTap);
+      window.removeEventListener('keydown',           onMarkerKeyDown);
+      markerPrompt.removeEventListener('click',       onMarkerTap);
       if (document.body.contains(markerPrompt)) document.body.removeChild(markerPrompt);
-      if (loadingBadgeRoot) {
-        setTimeout(() => loadingBadgeRoot?.unmount(), 0);
-      }
+      if (loadingBadgeRoot) setTimeout(() => loadingBadgeRoot?.unmount(), 0);
       if (document.body.contains(loadingBadge)) document.body.removeChild(loadingBadge);
 
       beamGeo.dispose(); chevronGeo.dispose(); groundDiscGeo.dispose();
       for (const m of markers) {
-        (m.beam.material as THREE.Material).dispose();
-        (m.chevron.material as THREE.Material).dispose();
+        (m.beam.material       as THREE.Material).dispose();
+        (m.chevron.material    as THREE.Material).dispose();
         (m.groundDisc.material as THREE.Material).dispose();
         m.glow.dispose();
       }
@@ -998,20 +1083,20 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
   // Hide joystick / HUD / state badge when a page overlay is open
   useEffect(() => {
     const joystickZone = document.getElementById('joystick-zone');
-    const hudEl = document.getElementById('hud');
-    const stateEl = document.getElementById('state');
-    const canvas = mountRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+    const hudEl        = document.getElementById('hud');
+    const stateEl      = document.getElementById('state');
+    const canvas       = mountRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
 
     if (activePage) {
       if (joystickZone) joystickZone.style.display = 'none';
-      if (hudEl) hudEl.style.display = 'none';
-      if (stateEl) stateEl.style.display = 'none';
-      if (canvas) canvas.style.pointerEvents = 'none';
+      if (hudEl)        hudEl.style.display        = 'none';
+      if (stateEl)      stateEl.style.display      = 'none';
+      if (canvas)       canvas.style.pointerEvents = 'none';
     } else {
       if (canvas) canvas.style.pointerEvents = 'auto';
       const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       if (isTouch && joystickZone) joystickZone.style.display = 'flex';
-      if (hudEl) hudEl.style.display = 'flex';
+      if (hudEl)   hudEl.style.display   = 'flex';
       if (stateEl) stateEl.style.display = 'block';
     }
   }, [activePage]);
