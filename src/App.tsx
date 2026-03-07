@@ -1,4 +1,5 @@
-import { useState, lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
 import Map from './components/Map';
@@ -16,49 +17,40 @@ const Contact = lazy(() => import('./components/Contact'));
 const Gallery = lazy(() => import('./components/Gallery'));
 const Schedule = lazy(() => import('./components/Schedule'));
 
-/**
- * Rendering order (z-index stack):
- *
- *   z-index 999  →  Preloader (video, fullscreen, unmounts after completion)
- *   z-index  50  →  Navbar (fixed, liquid glass, always above canvas)
- *   z-index  40  →  HUD / joystick / state badge (in index.html)
- *   z-index   2  →  Three.js canvas (Map.tsx, fixed, full viewport)
- */
-export default function App() {
-  const [preloaderDone, setPreloaderDone] = useState(false);
-  const [activePage, setActivePage] = useState<string | null>(null);
+const pageComponents: Record<string, React.ReactNode> = {
+  about: <About />,
+  team: <Team />,
+  events: <Events />,
+  'major-events': <MajorEvents />,
+  'minor-events': <MinorEvents />,
+  artist: <Artist />,
+  gallery: <Gallery />,
+  schedule: <Schedule />,
+  sponsors: <Sponsors />,
+  contact: <Contact />,
+};
 
-  const pageComponents: Record<string, React.ReactNode> = {
-    about: <About />,
-    team: <Team />,
-    events: <Events />,
-    'major-events': <MajorEvents />,
-    'minor-events': <MinorEvents />,
-    artist: <Artist />,
-    gallery: <Gallery />,
-    schedule: <Schedule />,
-    sponsors: <Sponsors />,
-    contact: <Contact />,
+function AppContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  // Strip the leading slash to match pageComponents keys (e.g. "/about" -> "about")
+  const activePage = location.pathname.slice(1) || null;
+  // Use a heuristic for preloader (always true after mounting for simplicity if we want, or derive from state if needed)
+  // For now, we assume preloader runs once per session. We can use a simple state here.
+
+  const handleNavigate = (page: string | null) => {
+    if (page) {
+      navigate(`/${page}`);
+    } else {
+      navigate('/');
+    }
   };
 
   return (
-    <div className="app-root">
-
-      {/* ── PRELOADER (video + progress bar) ─────────────────────────────── */}
-      {/* Stays mounted until onComplete fires, then fades out and unmounts */}
-      {!preloaderDone && (
-        <Preloader onComplete={() => setPreloaderDone(true)} />
-      )}
-
-      {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
-      {/* 
-        Three.js 3D world — fills the full viewport at z-index 2 
-        Loads immediately in the background behind the z-index 999
-        Preloader so WebGL shaders compile concurrently!
-      */}
+    <>
       <Map
-        onNavigate={(page) => setActivePage(page)}
-        onClose={() => setActivePage(null)}
+        onNavigate={handleNavigate}
+        onClose={() => handleNavigate(null)}
         activePage={activePage}
       />
 
@@ -67,7 +59,7 @@ export default function App() {
         <Suspense fallback={null}>
           <div className="page-overlay">
             <button
-              onClick={() => setActivePage(null)}
+              onClick={() => handleNavigate(null)}
               className="page-overlay-close"
               aria-label="Close"
             >
@@ -102,7 +94,7 @@ export default function App() {
 
                 {/* Mobile: tappable button */}
                 <button
-                  onClick={() => setActivePage(null)}
+                  onClick={() => handleNavigate(null)}
                   className="back-hint-mobile"
                   style={{
                     position: 'fixed',
@@ -139,7 +131,24 @@ export default function App() {
       {/* Navbar — fixed at top, z-index 50 (above canvas and HUD).
           We also load this immediately to fetch its imagery.
       */}
-      <Navbar onNavigate={(page) => setActivePage(page || null)} />
-    </div>
+      <Navbar onNavigate={(page) => handleNavigate(page || null)} />
+    </>
+  );
+}
+
+export default function App() {
+  const [preloaderDone, setPreloaderDone] = useState(false);
+
+  return (
+    <BrowserRouter>
+      <div className="app-root">
+        {/* ── PRELOADER (video + progress bar) ─────────────────────────────── */}
+        {!preloaderDone && (
+          <Preloader onComplete={() => setPreloaderDone(true)} />
+        )}
+
+        <AppContent />
+      </div>
+    </BrowserRouter>
   );
 }
