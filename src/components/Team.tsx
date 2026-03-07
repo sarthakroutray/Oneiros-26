@@ -4,19 +4,19 @@ import './Team.css';
 
 const TEAM = {
     convenors: [
-        { name: 'Agam Bhasin', role: 'Convenor', image: '/team/Agam_Bhasin.jpg' },
-        { name: 'Jahnvi Chawla', role: 'Convenor', image: '/team/Jahnvi%20Chawla.JPG' }
+        { name: 'Agam Bhasin', role: 'Convenor', image: '/team/Agam_Bhasin.webp' },
+        { name: 'Jahnvi Chawla', role: 'Convenor', image: '/team/Jahnvi Chawla.webp' }
     ],
     coConvenors: [
-        { name: 'Harsh Mangal', role: 'Co-Convenor', image: '/team/Harsh_Mangal.PNG' },
-        { name: 'Kamlnayan Panda', role: 'Co-Convenor', image: '/team/Kamlnayan_Panda.jpg' },
-        { name: 'Shambhavi Sharma', role: 'Co-Convenor', image: '/team/Shambhavi_Sharma.jpg' },
-        { name: 'Sidham Gupta', role: 'Co-Convenor', image: '/team/Sidham_Gupta.JPG' },
-        { name: 'Dinesh Choudhary', role: 'Co-Convenor', image: '/team/Dinesh_Choudhary.jpg' }
+        { name: 'Harsh Mangal', role: 'Co-Convenor', image: '/team/Harsh_Mangal.webp' },
+        { name: 'Kamlnayan Panda', role: 'Co-Convenor', image: '/team/Kamlnayan_Panda.webp' },
+        { name: 'Shambhavi Sharma', role: 'Co-Convenor', image: '/team/Shambhavi_Sharma.webp' },
+        { name: 'Sidham Gupta', role: 'Co-Convenor', image: '/team/Sidham_Gupta.webp' },
+        { name: 'Dinesh Choudhary', role: 'Co-Convenor', image: '/team/Dinesh_Choudhary.webp' }
     ],
     organisingSecretaries: [
-        { name: 'Kali Vithlani', role: 'Organising Secretary', image: '/team/Kali_Vithlani.jpg' },
-        { name: 'Sukrit Sinha', role: 'Organising Secretary', image: '/team/Sukrit_sinha.jpg' },
+        { name: 'Kali Vithlani', role: 'Organising Secretary', image: '/team/Kali_Vithlani.webp' },
+        { name: 'Sukrit Sinha', role: 'Organising Secretary', image: '/team/Sukrit_sinha.webp' },
     ]
 };
 

@@ -4,24 +4,24 @@ import DomeGallery from './DomeGallery';
 import './MinorEvents.css';
 
 const MINOR_EVENT_IMAGES = [
-    '/minor_events/IMG_0186.jpg',
-    '/minor_events/IMG_0204.jpg',
-    '/minor_events/IMG_6541.jpg',
-    '/minor_events/DSC03734-Enhanced-NR.jpg',
-    '/minor_events/IMG_0074.jpg',
-    '/minor_events/IMG_0184-Enhanced-NR.jpg',
-    '/minor_events/IMG_0652-Enhanced-NR.jpg',
-    '/minor_events/IMG_4068-Enhanced-NR.jpg',
-    '/minor_events/IMG_4095-Enhanced-NR.jpg',
-    '/minor_events/IMG_6993-Enhanced-NR.jpg',
-    '/minor_events/IMG_7284-Enhanced-NR.jpg',
-    '/minor_events/016A4770.jpg',
-    '/minor_events/016A4786.jpg',
-    '/minor_events/016A4822-Enhanced-NR.jpg',
-    '/minor_events/IMG_0701-Enhanced-NR.jpg',
-    '/minor_events/IMG_6500-Enhanced-NR.jpg',
-    '/minor_events/IMG_6569.jpg',
-    '/minor_events/Woodstock-33.jpg'
+    '/minor_events/IMG_0186.webp',
+    '/minor_events/IMG_0204.webp',
+    '/minor_events/IMG_6541.webp',
+    '/minor_events/DSC03734-Enhanced-NR.webp',
+    '/minor_events/IMG_0074.webp',
+    '/minor_events/IMG_0184-Enhanced-NR.webp',
+    '/minor_events/IMG_0652-Enhanced-NR.webp',
+    '/minor_events/IMG_4068-Enhanced-NR.webp',
+    '/minor_events/IMG_4095-Enhanced-NR.webp',
+    '/minor_events/IMG_6993-Enhanced-NR.webp',
+    '/minor_events/IMG_7284-Enhanced-NR.webp',
+    '/minor_events/016A4770.webp',
+    '/minor_events/016A4786.webp',
+    '/minor_events/016A4822-Enhanced-NR.webp',
+    '/minor_events/IMG_0701-Enhanced-NR.webp',
+    '/minor_events/IMG_6500-Enhanced-NR.webp',
+    '/minor_events/IMG_6569.webp',
+    '/minor_events/Woodstock-33.webp'
 ];
 
 export default function MinorEvents() {

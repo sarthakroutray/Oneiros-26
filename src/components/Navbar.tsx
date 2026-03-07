@@ -27,7 +27,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
     return (
         <nav className="cosmos-navbar font-manrope">
             <button type="button" className="cosmos-nav-logo mobile-logo nav-logo-btn" onClick={handleHomeClick} aria-label="Go to home">
-                <img src="/oneiros-logo.png" alt="ONEIROS" className="logo-img" />
+                <img src="/oneiros-logo.webp" alt="ONEIROS" className="logo-img" />
             </button>
 
             <button
@@ -51,9 +51,10 @@ export default function Navbar({ onNavigate }: NavbarProps) {
                     <li><a href="#minor-events" onClick={(e) => handleNavClick(e, 'minor-events')} className="font-medium tracking-[0.1em]">MINOR EVENTS</a></li>
                 </ul>
                 <button type="button" className="cosmos-nav-logo desktop-logo nav-logo-btn" onClick={handleHomeClick} aria-label="Go to home">
-                    <img src="/oneiros-logo.png" alt="ONEIROS" className="logo-img" />
+                    <img src="/oneiros-logo.webp" alt="ONEIROS" className="logo-img" />
                 </button>
                 <ul className="cosmos-nav-links right-links">
+                    <li><a href="#artist" onClick={(e) => handleNavClick(e, 'artist')} className="font-medium tracking-[0.1em]">ARTISTS</a></li>
                     <li><a href="#schedule" onClick={(e) => handleNavClick(e, 'schedule')} className="font-medium tracking-[0.1em]">SCHEDULE</a></li>
                     <li><a href="#sponsors" onClick={(e) => handleNavClick(e, 'sponsors')} className="font-medium tracking-[0.1em]">SPONSORS</a></li>
                     <li><a href="#contact" onClick={(e) => handleNavClick(e, 'contact')} className="font-medium tracking-[0.1em]">CONTACT</a></li>

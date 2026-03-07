@@ -10,13 +10,16 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
           // Keep React separate for better caching
           vendor: ['react', 'react-dom'],
-          // Optional: Add Three.js to its own chunk since it's large
+          // Three.js in its own chunk since it's large
           three: ['three'],
+          // Motion in its own chunk
+          motion: ['motion'],
         },
       },
     },

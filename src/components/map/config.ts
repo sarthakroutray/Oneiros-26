@@ -22,10 +22,10 @@ export type MarkerDef = {
 export const MARKER_INTERACT_RADIUS = 6;
 export const MARKER_ACTIVATE_RADIUS = 4;
 export const MARKER_DEFS: MarkerDef[] = [
-  { page: 'about', label: 'About', pos: [3, 0, -44], color: 0x00ffee },
-  { page: 'major-events', label: 'Major Events', pos: [46.3, 0, -7.4], color: 0xff6ef9 },
-  { page: 'minor-events', label: 'Minor Events', pos: [-49.2, 0, -18.2], color: 0xcc44ff },
-  { page: 'artist', label: 'Artist', pos: [-48.3, 0, 22.0], color: 0xffcc00 },
+  { page: 'about', label: 'About', pos: [-27, 0, -52], color: 0x00ffee },
+  { page: 'major-events', label: 'Major Events', pos: [60, 0, 6], color: 0xff6ef9 },
+  { page: 'minor-events', label: 'Minor Events', pos: [30, 0,-50], color: 0xcc44ff },
+  { page: 'artist', label: 'Artist', pos: [-55.3, 0, 10], color: 0xffcc00 },
 ];
 
 export const STATE_IDLE = 0;
