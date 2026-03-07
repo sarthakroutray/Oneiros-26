@@ -15,9 +15,36 @@ export type MarkerRuntime = {
 };
 
 export const createMarkerPrompt = () => {
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+    || ('ontouchstart' in window && window.innerWidth < 1024);
+
   const markerPrompt = document.createElement('div');
   markerPrompt.id = 'marker-prompt';
-  markerPrompt.style.cssText = `
+
+  const mobileStyles = `
+      position: fixed;
+      top: 60%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 45;
+      padding: 14px 30px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.22);
+      color: #fff;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.4px;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      white-space: nowrap;
+      max-width: 85vw;
+  `;
+
+  const desktopStyles = `
       position: fixed;
       bottom: 120px;
       left: 50%;
@@ -37,7 +64,9 @@ export const createMarkerPrompt = () => {
       opacity: 0;
       transition: opacity 0.25s ease;
       white-space: nowrap;
-    `;
+  `;
+
+  markerPrompt.style.cssText = isMobile ? mobileStyles : desktopStyles;
   document.body.appendChild(markerPrompt);
   return markerPrompt;
 };
