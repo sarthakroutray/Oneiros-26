@@ -41,11 +41,14 @@ const pageComponents: Record<string, React.ReactNode> = {
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
-  // Strip the leading slash to match pageComponents keys (e.g. "/about" -> "about")
-  const activePage = location.pathname.slice(1) || null;
+
+  // Safely extract the page key (e.g. "/about/" -> "about", "/Oneiros-26/about" if basename is somehow missing -> still matches first segment or we can just rely on react-router)
+  const pathname = location.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+  const activePage = pathname.split('/')[0] || null;
 
   const handleNavigate = (page: string | null) => {
     if (page) {
+      // Navigate to the root level of the single page app (router respects basename)
       navigate(`/${page}`);
     } else {
       navigate('/');
