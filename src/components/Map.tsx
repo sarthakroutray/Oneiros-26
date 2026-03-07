@@ -699,10 +699,15 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
     let animFrameId = 0;
     let frameCount = 0;
+    let renderingEnabled = false; // Gate: skip ALL GPU work while preloader video plays
 
     const tick = () => {
       animFrameId = requestAnimationFrame(tick);
       timer.update();
+
+      // While preloader is active, don't render — give GPU 100% to video decoder
+      if (!renderingEnabled) return;
+
       frameCount++;
       const dt = Math.min(timer.getDelta(), 0.05);
       const elapsed = timer.getElapsed();
@@ -1054,7 +1059,13 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const startAnimationLoop = async () => {
       await initBasicScene();
 
-      // Load assets first (models, textures) — sequential to avoid overlap
+      // ── DEFER HEAVY GPU WORK ──
+      // The Map mounts immediately, but we delay asset loading and shader
+      // compilation by 3s so the video decoder gets near-exclusive GPU access
+      // during the critical first seconds of playback.
+      await new Promise<void>(resolve => setTimeout(resolve, 3000));
+
+      // Load assets (models, textures) — sequential to avoid overlap
       try {
         await loadAssets();
       } catch (err) {
@@ -1084,11 +1095,26 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         camera.lookAt(0, charH * 0.55, 0);
         renderer.render(scene, camera);
         if (postFxRuntime) postFxRuntime.composer.render();
+        // Yield between warm-up renders to avoid blocking
+        await new Promise<void>(r => requestAnimationFrame(() => r()));
       }
 
       // Restore camera
       camera.position.copy(savedPos);
       camera.lookAt(savedTarget);
+
+      // Everything is pre-compiled. Enable rendering when the intro begins.
+      // If start-experience already fired before we got here, enable immediately.
+      if (hasStartedRef.current) {
+        renderingEnabled = true;
+      } else {
+        const onStart = () => {
+          renderingEnabled = true;
+          timer.reset();
+          window.removeEventListener('start-experience', onStart);
+        };
+        window.addEventListener('start-experience', onStart);
+      }
     };
 
     startAnimationLoop().catch(err => console.error('Map start error:', err));
