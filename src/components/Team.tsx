@@ -17,6 +17,7 @@ const TEAM = {
     organisingSecretaries: [
         { name: 'Kali Vithlani', role: 'Organising Secretary', image: '/team/Kali_Vithlani.webp' },
         { name: 'Sukrit Sinha', role: 'Organising Secretary', image: '/team/Sukrit_sinha.webp' },
+        { name: 'Tanmay Shah', role: 'Organising Secretary', image: '/team/Tanmay_Shah.webp' },
     ]
 };
 

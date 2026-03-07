@@ -57,6 +57,12 @@ function AppContent() {
 
   return (
     <>
+      {!activePage && (
+        <h1 className="seo-homepage-heading">
+          Oneiros 2026 – Manipal University Jaipur Cultural Fest
+        </h1>
+      )}
+
       {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
       {/* Mounted immediately — WebGL initializes while preloader plays */}
       <Map

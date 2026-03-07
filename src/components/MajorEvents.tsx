@@ -75,11 +75,12 @@ const events: Event[] = [
 ];
 
 function ImageCollage({
-  images, glowColors, reversed,
+  images, glowColors, reversed, eventName,
 }: {
   images: [string, string, string];
   glowColors: [string, string, string];
   reversed: boolean;
+  eventName: string;
 }) {
   const [order, setOrder] = useState<number[]>([0, 1, 2]);
   const baseRotations = reversed ? [5, -4, 3] : [-6, 4, -3];
@@ -130,9 +131,11 @@ function ImageCollage({
         >
           <img
             src={images[imgIndex]}
-            alt=""
+            alt={`${eventName} at Oneiros 2026`}
             className="w-full h-full object-cover"
             style={{ filter: "brightness(0.88) contrast(1.05)", pointerEvents: "none" }}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src = `https://placehold.co/260x340/0a0a1a/00d2d3?text=Coming+Soon`;
             }}
@@ -187,7 +190,7 @@ function EventSection({ event }: { event: Event }) {
         style={{ flexDirection: event.imageLeft ? "row" : "row-reverse" }}
       >
         <div className="flex items-center justify-center flex-shrink-0">
-          <ImageCollage images={event.images} glowColors={event.glowColors} reversed={!event.imageLeft} />
+          <ImageCollage images={event.images} glowColors={event.glowColors} reversed={!event.imageLeft} eventName={event.name} />
         </div>
 
         <motion.div
@@ -245,8 +248,10 @@ function EventSection({ event }: { event: Event }) {
         >
           <img
             src={event.images[0]}
-            alt={event.name}
+            alt={`${event.name} at Oneiros 2026`}
             style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.88) contrast(1.05)" }}
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.target as HTMLImageElement).src = `https://placehold.co/400x260/0a0a1a/00d2d3?text=${event.name}`;
             }}
@@ -297,6 +302,8 @@ export default function MajorEvents() {
         alt=""
         style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(60vw,480px)", opacity: 0.09, filter: "blur(2px) brightness(1.3)", pointerEvents: "none", zIndex: 0 }}
         draggable={false}
+        loading="lazy"
+        decoding="async"
       />
 
       <div style={{ position: "relative", zIndex: 1 }}>

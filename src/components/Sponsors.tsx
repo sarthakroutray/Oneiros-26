@@ -108,6 +108,8 @@ export default function Sponsors() {
                             src="/previousSponsors.webp"
                             alt="Previous Sponsors of Oneiros"
                             className="sponsors-prev-image"
+                            loading="lazy"
+                            decoding="async"
                         />
                         <div className="sponsors-image-glow" />
                     </div>
