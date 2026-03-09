@@ -3,9 +3,9 @@ import * as THREE from 'three'
 
 export const createNeonGridMaterial = () => new THREE.ShaderMaterial({
   uniforms: {
-    color1:  { value: new THREE.Color(0x00ffec) },
-    color2:  { value: new THREE.Color(0xff00ff) },
-    time:    { value: 0 },
+    color1: { value: new THREE.Color(0x00ffec) },
+    color2: { value: new THREE.Color(0xff00ff) },
+    time: { value: 0 },
     charPos: { value: new THREE.Vector3() },
   },
 
@@ -66,5 +66,5 @@ export const createNeonGridMaterial = () => new THREE.ShaderMaterial({
   `,
 
   transparent: false,
-  depthWrite:  true,
+  depthWrite: true,
 })

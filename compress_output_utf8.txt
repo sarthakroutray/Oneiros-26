@@ -1,0 +1,97 @@
+﻿node : Γ¥î public\major
+_events\cosmos\1.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\cosmos\1.webp
+'
+At line:1 char:84
++ ... 
+ress_output_utf8.txt", 
+(node scripts/compress-
+images.mjs 2>&1 | 
+Out-S ...
++                      
+       ~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Γ¥î public\ma   
+ jo...\cosmos\1.web    
+p':String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+Γ¥î public\major_events
+\cosmos\2.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\cosmos\2.webp
+'
+Γ¥î public\major_events
+\cosmos\3.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\cosmos\3.webp
+'
+Γ¥î public\major_events
+\destival\1.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\destival\1.we
+bp'
+Γ¥î public\major_events
+\destival\2.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\destival\2.we
+bp'
+Γ¥î public\major_events
+\destival\3.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\destival\3.we
+bp'
+Γ¥î public\major_events
+\photography\1.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\photography\1
+.webp'
+Γ¥î public\major_events
+\requiem\1.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\requiem\1.web
+p'
+Γ¥î public\major_events
+\requiem\2.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\requiem\2.web
+p'
+Γ¥î public\major_events
+\requiem\3.webp: 
+UNKNOWN: unknown 
+error, open 'D:\acm\Ono
+-fork\ono-pr\public\maj
+or_events\requiem\3.web
+p'
+Γ¥î public\team\Tanmay_
+Shah.webp: UNKNOWN: 
+unknown error, open 'D:
+\acm\Ono-fork\ono-pr\pu
+blic\team\Tanmay_Shah.w
+ebp'
+
+≡ƒÄë Done! Compressed 0 files, saved 0.0MB total.

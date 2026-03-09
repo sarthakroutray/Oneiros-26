@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import CosmicBackground from './CosmicBackground';
+
 import './Team.css';
 
 const TEAM = {
@@ -78,6 +78,8 @@ const TeamCard = ({ member, colorClass }: { member: any, colorClass: string }) =
                                 className="team-avatar-img"
                                 loading="lazy"
                                 decoding="async"
+                                width="200"
+                                height="200"
                             />
                         ) : member.image ? (
                             // placeholder shimmer shown while image hasn't entered view yet
@@ -140,9 +142,7 @@ export default function Team() {
 
     return (
         <div className="team-page" ref={sectionRef}>
-            <div className="team-fixed-bg">
-                <CosmicBackground />
-            </div>
+
 
             <section className="team-hero">
                 <div className="team-hero-content team-animate visible">

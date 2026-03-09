@@ -3,7 +3,6 @@
 /* ── PAGE BASE ─────────────────────────────────────────────────────── */
 .major-events-page {
     width: 100%;
-    background: radial-gradient(ellipse at 50% 30%, #060818 0%, #02030a 50%, #000 100%);
     color: #fff;
     overflow: hidden;
 }
@@ -111,8 +110,15 @@
 }
 
 @keyframes majorEventsBounce {
-    0%, 100% { transform: translateX(-50%) translateY(0); }
-    50% { transform: translateX(-50%) translateY(8px); }
+
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(8px);
+    }
 }
 
 /* ── EVENT SECTIONS ────────────────────────────────────────────────── */
@@ -251,6 +257,7 @@
 .major-events-animate {
     opacity: 0;
     transform: translateY(50px);
+    will-change: transform, opacity;
     transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
         transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -276,11 +283,25 @@
     transform: translate(0);
 }
 
-.major-events-animate-delay-1 { transition-delay: 0.1s; }
-.major-events-animate-delay-2 { transition-delay: 0.25s; }
-.major-events-animate-delay-3 { transition-delay: 0.4s; }
-.major-events-animate-delay-4 { transition-delay: 0.55s; }
-.major-events-animate-delay-5 { transition-delay: 0.7s; }
+.major-events-animate-delay-1 {
+    transition-delay: 0.1s;
+}
+
+.major-events-animate-delay-2 {
+    transition-delay: 0.25s;
+}
+
+.major-events-animate-delay-3 {
+    transition-delay: 0.4s;
+}
+
+.major-events-animate-delay-4 {
+    transition-delay: 0.55s;
+}
+
+.major-events-animate-delay-5 {
+    transition-delay: 0.7s;
+}
 
 /* ── MARQUEE ───────────────────────────────────────────────────────── */
 .major-events-marquee-section {
@@ -297,6 +318,7 @@
 .major-events-marquee-track {
     display: flex;
     width: max-content;
+    will-change: transform;
     animation: majorEventsMarqueeScroll 20s linear infinite;
 }
 
@@ -329,8 +351,13 @@
 }
 
 @keyframes majorEventsMarqueeScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
 }
 
 /* ── DOME GALLERY ──────────────────────────────────────────────────── */
@@ -409,7 +436,9 @@
     border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.major-events-stat:last-child { border-right: none; }
+.major-events-stat:last-child {
+    border-right: none;
+}
 
 .major-events-stat-value {
     font-family: 'Cinzel', serif;
@@ -430,6 +459,7 @@
 
 /* ── MOBILE ────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+
     .major-events-event-section,
     .major-events-event-section--reverse {
         flex-direction: column;
@@ -468,7 +498,13 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
 }
+
 @keyframes majorEventsMarqueeScroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
 }

@@ -1,13 +1,16 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Oneiros 2026 – MUJ Cultural Fest | Events & Competitions</title>
   <meta name="title" content="Oneiros 2026 – MUJ Cultural Fest | Events & Competitions" />
-  <meta name="description" content="Join Oneiros 2026 – the annual cultural fest of Manipal University Jaipur featuring competitions, performances, and exciting events." />
+  <meta name="description"
+    content="Join Oneiros 2026 – the annual cultural fest of Manipal University Jaipur featuring competitions, performances, and exciting events." />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="theme-color" content="#000000" />
+  <meta name="color-scheme" content="dark" />
   <link rel="canonical" href="https://mujoneiros.in/" />
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -17,10 +20,15 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Exo+2:wght@400;500;700&family=Manrope:wght@400;500;700&display=swap" />
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Exo+2:wght@400;500;700&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet" />
-  <link rel="preload" as="image" href="/oneiros-logo.webp" />
-  <link rel="preload" as="image" href="/preview.png" />
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Orbitron:wght@400;500;700&family=Exo+2:wght@400;500;700&family=Manrope:wght@400;500;700&display=swap"
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Orbitron:wght@400;500;700&family=Exo+2:wght@400;500;700&family=Manrope:wght@400;500;700&display=swap"
+      rel="stylesheet" />
+  </noscript>
+  <link rel="preload" as="image" href="/oneiros-logo.webp" fetchpriority="high" />
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Oneiros 2026" />
@@ -82,10 +90,18 @@
   </script>
 
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-    html, body {
-      width: 100%; height: 100%;
+    html,
+    body {
+      width: 100%;
+      height: 100%;
       overflow: hidden;
       background: #000;
       touch-action: none;
@@ -94,7 +110,84 @@
       user-select: none;
       overscroll-behavior: none;
     }
-    
+
+    /* ── STATIC PRELOADER (paints before React boots) ── */
+    #static-preloader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      background: radial-gradient(circle at center, #0a0a1a 0%, #000000 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      contain: layout style;
+    }
+
+    #static-preloader .sp-loading {
+      position: absolute;
+      bottom: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 80%;
+      max-width: 400px;
+      font-family: 'Exo 2', system-ui, sans-serif;
+    }
+
+    #static-preloader .sp-pct {
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(0, 255, 235, 0.8), 0 0 20px rgba(0, 255, 235, 0.4);
+    }
+
+    #static-preloader .sp-text {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 500;
+    }
+
+    #static-preloader .sp-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    #static-preloader .sp-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(0, 255, 235, 0.2), rgba(0, 255, 235, 0.8), #fff);
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 255, 235, 0.6), inset 0 0 5px rgba(255, 255, 255, 0.8);
+      animation: staticBarGrow 2s ease-out forwards;
+    }
+
+    @keyframes staticBarGrow {
+      to {
+        width: 15%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      #static-preloader .sp-loading {
+        bottom: 20%;
+      }
+    }
+
     /* ── MOBILE JOYSTICK ── */
     #joystick-zone {
       position: fixed;
@@ -103,63 +196,94 @@
       width: 140px;
       height: 140px;
       z-index: 40;
-      display: none; /* shown by JS on touch devices, after preloader */
+      display: none;
+      /* shown by JS on touch devices, after preloader */
       align-items: center;
       justify-content: center;
       touch-action: none;
     }
+
     #joystick-base {
       position: relative;
       width: 120px;
       height: 120px;
       border-radius: 50%;
       background: rgba(8, 8, 20, 0.6);
-      border: 1.5px solid rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
+
     #joystick-base.sprinting {
-      border-color: rgba(255,124,79,0.6);
-      box-shadow: 0 0 18px rgba(255,124,79,0.25), inset 0 0 12px rgba(255,124,79,0.1);
+      border-color: rgba(255, 124, 79, 0.6);
+      box-shadow: 0 0 18px rgba(255, 124, 79, 0.25), inset 0 0 12px rgba(255, 124, 79, 0.1);
     }
+
     #joystick-knob {
       position: absolute;
-      top: 50%; left: 50%;
-      width: 44px; height: 44px;
+      top: 50%;
+      left: 50%;
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(255,255,255,0.85);
-      border: 1.5px solid rgba(255,255,255,0.3);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      background: rgba(255, 255, 255, 0.85);
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
       pointer-events: none;
       transition: background 0.15s ease, box-shadow 0.15s ease;
     }
+
     #joystick-knob.active {
-      background: rgba(79,255,170,0.9);
-      box-shadow: 0 0 14px rgba(79,255,170,0.55);
+      background: rgba(79, 255, 170, 0.9);
+      box-shadow: 0 0 14px rgba(79, 255, 170, 0.55);
     }
+
     #joystick-knob.sprinting {
-      background: rgba(255,124,79,0.9);
-      box-shadow: 0 0 14px rgba(255,124,79,0.55);
+      background: rgba(255, 124, 79, 0.9);
+      box-shadow: 0 0 14px rgba(255, 124, 79, 0.55);
     }
+
     #joystick-zone.sprinting::after {
       content: '';
       position: absolute;
       inset: -8px;
       border-radius: 50%;
-      border: 2px solid rgba(255,124,79,0.35);
+      border: 2px solid rgba(255, 124, 79, 0.35);
       animation: sprintPulse 0.8s ease-in-out infinite;
       pointer-events: none;
     }
+
     @keyframes sprintPulse {
-      0%, 100% { opacity: 0.35; transform: scale(1); }
-      50%       { opacity: 0.7;  transform: scale(1.06); }
+
+      0%,
+      100% {
+        opacity: 0.35;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.7;
+        transform: scale(1.06);
+      }
     }
   </style>
 </head>
 
 <body>
+
+  <!-- Static preloader: paints IMMEDIATELY before any JS loads.
+       React's Preloader component will replace this when it mounts. -->
+  <div id="static-preloader">
+    <div class="sp-loading">
+      <div class="sp-pct">0%</div>
+      <div class="sp-text">Loading 3D Experience...</div>
+      <div class="sp-bar-bg">
+        <div class="sp-bar-fill"></div>
+      </div>
+    </div>
+  </div>
 
   <div id="joystick-zone">
     <div id="joystick-base">
@@ -167,8 +291,9 @@
     </div>
   </div>
 
-  <div id="root"></div>
+  <main id="root"></main>
 
   <script type="module" src="/src/main.tsx"></script>
 </body>
+
 </html>

@@ -2,7 +2,6 @@
 
 .about-page {
     width: 100%;
-    background: radial-gradient(ellipse at 50% 30%, #060818 0%, #02030a 50%, #000 100%);
     color: #fff;
     overflow: hidden;
 }
@@ -133,6 +132,7 @@
     align-items: center;
     justify-content: center;
     padding: 6rem 2rem;
+    contain: content;
 }
 
 .about-content-inner {
@@ -232,6 +232,7 @@
 .about-animate {
     opacity: 0;
     transform: translateY(50px);
+    will-change: transform, opacity;
     transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
         transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -278,6 +279,7 @@
 .about-marquee-track {
     display: flex;
     width: max-content;
+    will-change: transform;
     animation: marqueeScroll 20s linear infinite;
 }
 

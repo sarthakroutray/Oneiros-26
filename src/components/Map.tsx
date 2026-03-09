@@ -120,7 +120,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const mobileResolutionProfile = isMobile ? getMobileResolutionProfile(renderer) : null;
 
     // Hard-cap DPR to avoid runaway fill-rate on ultra-dense mobile screens.
-    const PR_CAP = isMobile ? 1.15 : 1.75;
+    const PR_CAP = isMobile ? 1.0 : 1.5;
 
     const getTargetPixelRatio = (profile: QualityProfile) => {
       const resolutionCap = isMobile && mobileResolutionProfile && profile.level !== 'LOW'
@@ -387,7 +387,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     // ── STARS (SKY) ───────────────────────────────────────────────────────────
-    const STARS_COUNT = isMobile ? 600 : 2500;
+    const STARS_COUNT = isMobile ? 300 : 2500;
     const sPos = new Float32Array(STARS_COUNT * 3);
     const sBaseCol = new Float32Array(STARS_COUNT * 3);
     const sPhase = new Float32Array(STARS_COUNT);
@@ -468,7 +468,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
     // ── SHOOTING STARS ────────────────────────────────────────────────────────
     const ssGeo = new THREE.BufferGeometry();
-    const MAX_SHOOTING_STARS = isMobile ? 4 : 12;
+    const MAX_SHOOTING_STARS = isMobile ? 2 : 12;
     const ssPos = new Float32Array(MAX_SHOOTING_STARS * 6);
     const ssCol = new Float32Array(MAX_SHOOTING_STARS * 6);
 
@@ -1211,5 +1211,5 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     }
   }, [activePage]);
 
-  return <div ref={mountRef} style={{ position: 'fixed', inset: 0, zIndex: 2 }} />;
+  return <div ref={mountRef} style={{ position: 'fixed', inset: 0, zIndex: 2 }} aria-hidden="true" />;
 }

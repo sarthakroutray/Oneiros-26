@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import CosmicBackground from './CosmicBackground';
+
 import DomeGallery from './DomeGallery';
 import './MinorEvents.css';
 
@@ -73,16 +73,8 @@ export default function MinorEvents() {
 
     return (
         <div className="minor-events-page" ref={sectionRef}>
-            {/* ── FIXED BACKGROUND — shared across all sections ──────── */}
-            <div className="minor-events-fixed-bg">
-                <CosmicBackground />
-            </div>
-            <img
-                src="/favicon-nobg.webp"
-                alt=""
-                className="minor-events-fixed-watermark"
-                draggable={false}
-            />
+
+
 
             {/* ── HERO — LANDING SECTION ───────────────────────────────── */}
             <section className="minor-events-hero">

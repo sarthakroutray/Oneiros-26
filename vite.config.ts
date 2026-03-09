@@ -11,7 +11,9 @@ export default defineConfig({
     viteCompression(),
   ],
   build: {
+    target: 'es2020',
     sourcemap: false,
+    cssMinify: 'lightningcss',
     rollupOptions: {
       output: {
         manualChunks: {

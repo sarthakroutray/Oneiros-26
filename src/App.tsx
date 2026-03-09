@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
@@ -45,6 +45,21 @@ function AppContent() {
   // Safely extract the page key (e.g. "/about/" -> "about", "/Oneiros-26/about" if basename is somehow missing -> still matches first segment or we can just rely on react-router)
   const pathname = location.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
   const activePage = pathname.split('/')[0] || null;
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // 1. Force navigation to root on refresh/initial mount
+  useEffect(() => {
+    if (window.location.pathname !== '/' && window.location.pathname !== '/Oneiros-26/') {
+      navigate('/', { replace: true });
+    }
+  }, []); // Once on mount
+
+  // 2. Scroll overlay to top when page changes
+  useEffect(() => {
+    if (activePage && overlayRef.current) {
+      overlayRef.current.scrollTop = 0;
+    }
+  }, [activePage]);
 
   const handleNavigate = (page: string | null) => {
     if (page) {
@@ -74,7 +89,7 @@ function AppContent() {
       {/* Page overlay — shown when a nav link is clicked */}
       {activePage && pageComponents[activePage] && (
         <Suspense fallback={null}>
-          <div className="page-overlay">
+          <div className="page-overlay" ref={overlayRef} role="dialog" aria-modal="true" aria-label={`${activePage} page`}>
             <button
               onClick={() => handleNavigate(null)}
               className="page-overlay-close"

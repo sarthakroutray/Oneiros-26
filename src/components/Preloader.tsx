@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import './Preloader.css';
 import preloaderVidDesktop from '../assets/intro_enhanced.webm';
-import CosmicBackground from './CosmicBackground';
+
 
 interface PreloaderProps {
     onComplete: () => void;
@@ -38,6 +38,10 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         const bar = barRef.current;
         const pct = pctRef.current;
         if (!video || !bar || !pct) return;
+
+        // Hide the static HTML preloader now that React has taken over
+        const staticPreloader = document.getElementById('static-preloader');
+        if (staticPreloader) staticPreloader.remove();
 
         if (!initializedRef.current) {
             video.playbackRate = 1.2;
@@ -88,16 +92,18 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
     return (
         <div className={`preloader-container ${fadeOut ? 'fade-out' : ''}`}>
-            {!fadeOut && <CosmicBackground />}
+
 
             <video
                 ref={videoRef}
                 autoPlay
                 muted
                 playsInline
-                preload="auto"
+                preload="metadata"
                 onEnded={handleComplete}
                 className="preloader-video"
+                aria-label="Oneiros 2026 introduction animation"
+                disableRemotePlayback
             >
                 <source src={preloaderVidDesktop} type="video/webm" />
             </video>
