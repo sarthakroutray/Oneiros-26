@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, memo } from "react";
 import { motion, useInView } from "motion/react";
-import CosmicBackground from "./CosmicBackground";
+
 import "./MajorEvents.css";
 
 const CYAN = "#00d2d3";
@@ -74,7 +74,7 @@ const events: Event[] = [
   },
 ];
 
-function ImageCollage({
+const ImageCollage = memo(function ImageCollage({
   images, glowColors, reversed, eventName,
 }: {
   images: [string, string, string];
@@ -136,6 +136,8 @@ function ImageCollage({
             style={{ filter: "brightness(0.88) contrast(1.05)", pointerEvents: "none" }}
             loading="lazy"
             decoding="async"
+            width="260"
+            height="340"
             onError={(e) => {
               (e.target as HTMLImageElement).src = `https://placehold.co/260x340/0a0a1a/00d2d3?text=Coming+Soon`;
             }}
@@ -158,9 +160,9 @@ function ImageCollage({
       ))}
     </motion.div>
   );
-}
+});
 
-function EventSection({ event }: { event: Event }) {
+const EventSection = memo(function EventSection({ event }: { event: Event }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.2 });
 
@@ -218,7 +220,7 @@ function EventSection({ event }: { event: Event }) {
             {event.description}
           </p>
           <div className="flex items-center gap-3">
-            {[PINK, CYAN, CYAN].map((color, i) => (
+            {[CYAN, CYAN, PINK].map((color, i) => (
               <div key={i} style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}aa` }} />
             ))}
           </div>
@@ -252,6 +254,8 @@ function EventSection({ event }: { event: Event }) {
             style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.88) contrast(1.05)" }}
             loading="lazy"
             decoding="async"
+            width="340"
+            height="440"
             onError={(e) => {
               (e.target as HTMLImageElement).src = `https://placehold.co/400x260/0a0a1a/00d2d3?text=${event.name}`;
             }}
@@ -280,7 +284,7 @@ function EventSection({ event }: { event: Event }) {
           </p>
 
           <div className="flex items-center justify-center gap-3">
-            {[PINK, CYAN, CYAN].map((color, i) => (
+            {[CYAN, CYAN, PINK].map((color, i) => (
               <div key={i} style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 6px ${color}aa` }} />
             ))}
           </div>
@@ -288,23 +292,14 @@ function EventSection({ event }: { event: Event }) {
       </motion.div>
     </section>
   );
-}
+});
 
 export default function MajorEvents() {
   return (
     <div className="major-events-page" style={{ minHeight: "100vh", position: "relative" }}>
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }}>
-        <CosmicBackground />
-      </div>
 
-      <img
-        src="/favicon-nobg.webp"
-        alt=""
-        style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(60vw,480px)", opacity: 0.09, filter: "blur(2px) brightness(1.3)", pointerEvents: "none", zIndex: 0 }}
-        draggable={false}
-        loading="lazy"
-        decoding="async"
-      />
+
+
 
       <div style={{ position: "relative", zIndex: 1 }}>
 
@@ -384,7 +379,7 @@ export default function MajorEvents() {
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.6 }}
             className="flex items-center gap-3" style={{ marginTop: "2.5rem" }}>
-            {[CYAN, PINK, CYAN].map((color, i) => (
+            {[CYAN, CYAN, PINK].map((color, i) => (
               <div key={i} style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}aa` }} />
             ))}
           </motion.div>

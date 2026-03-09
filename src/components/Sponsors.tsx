@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import CosmicBackground from './CosmicBackground';
+
 import './Sponsors.css';
 
 export default function Sponsors() {
@@ -26,16 +26,8 @@ export default function Sponsors() {
 
     return (
         <div className="sponsors-page" ref={sectionRef}>
-            {/* ── FIXED BACKGROUND ──────── */}
-            <div className="sponsors-fixed-bg">
-                <CosmicBackground />
-            </div>
-            <img
-                src="/favicon-nobg.webp"
-                alt=""
-                className="sponsors-fixed-watermark"
-                draggable={false}
-            />
+
+
 
             {/* ── HERO ───────────────────────────────── */}
             <section className="sponsors-hero">
@@ -110,6 +102,8 @@ export default function Sponsors() {
                             className="sponsors-prev-image"
                             loading="lazy"
                             decoding="async"
+                            width="800"
+                            height="400"
                         />
                         <div className="sponsors-image-glow" />
                     </div>

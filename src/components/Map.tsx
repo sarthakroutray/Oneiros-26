@@ -120,7 +120,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const mobileResolutionProfile = isMobile ? getMobileResolutionProfile(renderer) : null;
 
     // Hard-cap DPR to avoid runaway fill-rate on ultra-dense mobile screens.
-    const PR_CAP = isMobile ? 1.15 : 1.75;
+    const PR_CAP = isMobile ? 1.0 : 1.5;
 
     const getTargetPixelRatio = (profile: QualityProfile) => {
       const resolutionCap = isMobile && mobileResolutionProfile && profile.level !== 'LOW'
@@ -291,9 +291,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     sCtx.fillStyle = grd;
     sCtx.fillRect(0, 0, 64, 64);
     const spriteTex = new THREE.CanvasTexture(spriteCanvas);
+    spriteTex.needsUpdate = true;
 
     const emberMat = new THREE.PointsMaterial({
-      size: 0.5,
+      size: 0.8,
       map: spriteTex,
       vertexColors: true,
       transparent: true,
@@ -387,7 +388,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     // ── STARS (SKY) ───────────────────────────────────────────────────────────
-    const STARS_COUNT = isMobile ? 600 : 2500;
+    const STARS_COUNT = isMobile ? 300 : 2500;
     const sPos = new Float32Array(STARS_COUNT * 3);
     const sBaseCol = new Float32Array(STARS_COUNT * 3);
     const sPhase = new Float32Array(STARS_COUNT);
@@ -468,7 +469,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
 
     // ── SHOOTING STARS ────────────────────────────────────────────────────────
     const ssGeo = new THREE.BufferGeometry();
-    const MAX_SHOOTING_STARS = isMobile ? 4 : 12;
+    const MAX_SHOOTING_STARS = isMobile ? 2 : 12;
     const ssPos = new Float32Array(MAX_SHOOTING_STARS * 6);
     const ssCol = new Float32Array(MAX_SHOOTING_STARS * 6);
 
@@ -695,6 +696,41 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       charArmature.rotation.y = charRotY;
     };
 
+    // ── TELEPORT-TO-MARKER (from TeleportBar buttons) ─────────────────────────
+    const onTeleportToMarker = (e: Event) => {
+      const page = (e as CustomEvent<{ page: string }>).detail.page;
+      const def = MARKER_DEFS.find(m => m.page === page);
+      if (!def) return;
+
+      // Place character at the marker
+      charPos.set(def.pos[0], GROUND_Y, def.pos[2]);
+
+      // Face the character toward the center of the map
+      charRotY = Math.atan2(-charPos.x, -charPos.z);
+      applyCharTransform();
+
+      // Camera orbit: position the camera TOWARD the center of the map
+      // (not behind the character) to avoid exceeding CAM_MAX_RADIUS at edge markers.
+      // This means the camera is "in front" of the character, looking at its face,
+      // giving a clear view of both the character and the marker.
+      camYaw = charRotY;          // toward center = within bounds
+      camPitch = 0.35;            // slightly elevated for a cinematic angle
+      camDist = CAM_DIST_DEFAULT;
+
+      // SNAP camera immediately (skip lerp) so the transition is instant
+      const eyeY = charPos.y + charH * 0.55;
+      camCurrent.set(
+        charPos.x + Math.sin(camYaw) * camDist * Math.cos(camPitch),
+        charPos.y + camDist * Math.sin(camPitch) + charH * 0.3,
+        charPos.z + Math.cos(camYaw) * camDist * Math.cos(camPitch),
+      );
+      camera.position.copy(camCurrent);
+      camera.lookAt(charPos.x, eyeY, charPos.z);
+    };
+    window.addEventListener('teleport-to-marker', onTeleportToMarker);
+
+
+
     // ── RENDER LOOP ───────────────────────────────────────────────────────────
     const timer = new THREE.Timer();
     const moveDir = new THREE.Vector3();
@@ -719,11 +755,13 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       if (!renderingEnabled) return;
 
       // ── GPU PAUSE ────────────────────────────────────────────────────────
-      // If a React UI overlay is open, seamlessly freeze the 3D scene.
-      // This immediately frees all computing power to render heavy DOM components,
-      // fixing the transition stutter caused by simultaneous rendering contention.
+      // If a React UI overlay is open, we stop all physics, animation, and logic updates.
+      // However, we MUST still call renderer.render() to keep the last frame visible
+      // on the canvas; otherwise, some browsers/devices will clear the buffer to black.
       if (activePageRef.current) {
         hideMarkerPrompt();
+        if (postFxRuntime) postFxRuntime.composer.render();
+        else renderer.render(scene, camera);
         return;
       }
 
@@ -792,18 +830,24 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         charRotY += diff * Math.min(TURN_SPEED * dt, 1.0);
       }
 
-      // ── AUTO-ROTATE CAMERA BEHIND CHARACTER ──────────────────────────────────
-      // Removed: Auto-rotating continuous movement causes a feedback loop where moving backward or sideways
-      // swings the camera, changing the move direction interactively and looping continuously.
-      /*
+      // ── AUTO-FOLLOW CAMERA ───────────────────────────────────────────────────
+      // Automatically swings the camera to stay behind the character during movement.
+      // This creates a much more cinematic and immersive 3rd-person experience.
       if (moving && !isDragging && camTouchId === null && !isIntroActive) {
-        const targetCamYaw = charRotY + Math.PI;
-        let yawDiff = targetCamYaw - camYaw;
-        while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
-        while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
-        camYaw += yawDiff * Math.min(3.0 * dt, 1.0);
+        // We follow when moving forward or strafing/turning (A,D).
+        // For pure backward movement (inputY < -0.1), we don't snap the camera 180°
+        // to avoid the "backward jitter" feedback loop where the camera and character 
+        // fight over the orientation.
+        if (inputY > -0.1) {
+          const targetCamYaw = charRotY + Math.PI;
+          let yawDiff = targetCamYaw - camYaw;
+          while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
+          while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
+
+          // Smoothly rotate the camera yaw with a responsive follow speed.
+          camYaw += yawDiff * Math.min(2.2 * dt, 1.0);
+        }
       }
-      */
 
       if (charArmature) {
         const idleY = moving ? 0 : Math.sin(elapsed * 1.6) * 0.065;
@@ -1162,6 +1206,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       window.removeEventListener('wheel', onWheel);
       joystickZone?.removeEventListener('touchstart', onJoyTouchStart);
       window.removeEventListener('keydown', onMarkerKeyDown);
+      window.removeEventListener('teleport-to-marker', onTeleportToMarker);
       markerPrompt.removeEventListener('click', onMarkerTap);
       if (document.body.contains(markerPrompt)) document.body.removeChild(markerPrompt);
 
@@ -1211,5 +1256,5 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     }
   }, [activePage]);
 
-  return <div ref={mountRef} style={{ position: 'fixed', inset: 0, zIndex: 2 }} />;
+  return <div ref={mountRef} style={{ position: 'fixed', inset: 0, zIndex: 2 }} aria-hidden="true" />;
 }

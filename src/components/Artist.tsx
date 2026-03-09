@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import CosmicBackground from './CosmicBackground';
+
 import './Artist.css';
 
 export default function Artist() {
@@ -26,16 +26,8 @@ export default function Artist() {
 
     return (
         <div className="artist-page" ref={sectionRef}>
-            {/* ── FIXED BACKGROUND — shared across all sections ──────── */}
-            <div className="artist-fixed-bg">
-                <CosmicBackground />
-            </div>
-            <img
-                src="/favicon-nobg.webp"
-                alt=""
-                className="artist-fixed-watermark"
-                draggable={false}
-            />
+
+
 
             {/* ── HERO — LANDING SECTION ───────────────────────────────── */}
             <section className="artist-hero">

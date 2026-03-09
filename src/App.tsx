@@ -1,9 +1,12 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
 import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
-import Map from './components/Map';
+import TeleportBar from './components/TeleportBar';
 import './App.css';
+
+// ── Heavy 3D component (lazy-loaded to avoid blocking the initial preloader paint) ──
+const Map = lazy(() => import('./components/Map'));
 
 // ── Lazy-loaded page overlays (only fetched when user navigates to them) ──
 const About = lazy(() => import('./components/About'));
@@ -16,6 +19,7 @@ const Sponsors = lazy(() => import('./components/Sponsors'));
 const Contact = lazy(() => import('./components/Contact'));
 const Gallery = lazy(() => import('./components/Gallery'));
 const Schedule = lazy(() => import('./components/Schedule'));
+
 
 const pageComponents: Record<string, React.ReactNode> = {
   about: <About />,
@@ -45,6 +49,21 @@ function AppContent() {
   // Safely extract the page key (e.g. "/about/" -> "about", "/Oneiros-26/about" if basename is somehow missing -> still matches first segment or we can just rely on react-router)
   const pathname = location.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
   const activePage = pathname.split('/')[0] || null;
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // 1. Force navigation to root on refresh/initial mount
+  useEffect(() => {
+    if (window.location.pathname !== '/' && window.location.pathname !== '/Oneiros-26/') {
+      navigate('/', { replace: true });
+    }
+  }, []); // Once on mount
+
+  // 2. Scroll overlay to top when page changes
+  useEffect(() => {
+    if (activePage && overlayRef.current) {
+      overlayRef.current.scrollTop = 0;
+    }
+  }, [activePage]);
 
   const handleNavigate = (page: string | null) => {
     if (page) {
@@ -65,16 +84,18 @@ function AppContent() {
 
       {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
       {/* Mounted immediately — WebGL initializes while preloader plays */}
-      <Map
-        onNavigate={handleNavigate}
-        onClose={() => handleNavigate(null)}
-        activePage={activePage}
-      />
+      <Suspense fallback={null}>
+        <Map
+          onNavigate={handleNavigate}
+          onClose={() => handleNavigate(null)}
+          activePage={activePage}
+        />
+      </Suspense>
 
       {/* Page overlay — shown when a nav link is clicked */}
       {activePage && pageComponents[activePage] && (
         <Suspense fallback={null}>
-          <div className="page-overlay">
+          <div className="page-overlay" ref={overlayRef} role="dialog" aria-modal="true" aria-label={`${activePage} page`}>
             <button
               onClick={() => handleNavigate(null)}
               className="page-overlay-close"
@@ -109,41 +130,28 @@ function AppContent() {
                   Press <kbd style={{ padding: '2px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.12)', fontWeight: 600, color: '#fff' }}>E</kbd> to go back
                 </span>
 
-                {/* Mobile: tappable button */}
-                <button
-                  onClick={() => handleNavigate(null)}
-                  className="back-hint-mobile"
-                  style={{
-                    position: 'fixed',
-                    bottom: 36,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 1001,
-                    padding: '12px 28px',
-                    borderRadius: 50,
-                    background: 'rgba(0,0,0,0.72)',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255,255,255,0.22)',
-                    color: 'rgba(255,255,255,0.85)',
-                    fontSize: 14,
-                    fontFamily: "'Inter', system-ui, sans-serif",
-                    letterSpacing: '0.3px',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    display: 'none',
-                    alignItems: 'center',
-                    gap: 8,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Tap here to go back
-                </button>
+                {/* Mobile: scroll hint + back button */}
+                <div className="mobile-bottom-hud">
+                  <div className="mobile-scroll-hint">
+                    <div className="mobile-scroll-line" />
+                    <span className="mobile-scroll-text">Scroll</span>
+                  </div>
+                  <button
+                    onClick={() => handleNavigate(null)}
+                    className="back-hint-mobile-btn"
+                  >
+                    Tap here to go back
+                  </button>
+                </div>
               </>
             )}
             {pageComponents[activePage]}
           </div>
         </Suspense>
       )}
+
+      {/* Teleport bar — quick navigation to 3D markers (hidden when overlay is open) */}
+      {!activePage && <TeleportBar />}
 
       {/* Navbar — fixed at top, z-index 50 (above canvas and HUD).
           We also load this immediately to fetch its imagery.
@@ -152,6 +160,7 @@ function AppContent() {
     </>
   );
 }
+
 
 export default function App() {
   const [preloaderDone, setPreloaderDone] = useState(false);

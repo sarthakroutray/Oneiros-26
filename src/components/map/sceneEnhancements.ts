@@ -62,7 +62,7 @@ export const createCharacterAura = (scene: THREE.Scene) => {
   const material = new THREE.MeshBasicMaterial({
     color: 0x6ad9ff,
     transparent: true,
-    opacity: 0.22,
+    opacity: 0.12,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
@@ -79,7 +79,7 @@ export const createCharacterAura = (scene: THREE.Scene) => {
     aura.position.set(position.x, position.y + 0.02, position.z);
     const pulse = 0.9 + Math.sin(elapsed * 2.6) * 0.08;
     aura.scale.setScalar(pulse);
-    material.opacity = 0.17 + Math.sin(elapsed * 2.0) * 0.04;
+    material.opacity = 0.08 + Math.sin(elapsed * 2.0) * 0.03;
   };
 
   const dispose = () => {

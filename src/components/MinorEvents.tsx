@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import CosmicBackground from './CosmicBackground';
+
 import DomeGallery from './DomeGallery';
 import './MinorEvents.css';
 
@@ -73,16 +73,8 @@ export default function MinorEvents() {
 
     return (
         <div className="minor-events-page" ref={sectionRef}>
-            {/* ── FIXED BACKGROUND — shared across all sections ──────── */}
-            <div className="minor-events-fixed-bg">
-                <CosmicBackground />
-            </div>
-            <img
-                src="/favicon-nobg.webp"
-                alt=""
-                className="minor-events-fixed-watermark"
-                draggable={false}
-            />
+
+
 
             {/* ── HERO — LANDING SECTION ───────────────────────────────── */}
             <section className="minor-events-hero">
@@ -125,9 +117,9 @@ export default function MinorEvents() {
                         </p>
 
                         <div className="minor-events-dots minor-events-animate minor-events-animate-delay-5">
+                            <span className="minor-events-dot minor-events-dot--cyan" />
+                            <span className="minor-events-dot minor-events-dot--cyan" />
                             <span className="minor-events-dot minor-events-dot--pink" />
-                            <span className="minor-events-dot minor-events-dot--cyan" />
-                            <span className="minor-events-dot minor-events-dot--cyan" />
                         </div>
                     </div>
                 </section>
@@ -160,8 +152,8 @@ export default function MinorEvents() {
 
                         <div className="minor-events-dots minor-events-animate minor-events-animate-delay-5" style={{ transitionDelay: '0.85s' }}>
                             <span className="minor-events-dot minor-events-dot--cyan" />
-                            <span className="minor-events-dot minor-events-dot--pink" />
                             <span className="minor-events-dot minor-events-dot--cyan" />
+                            <span className="minor-events-dot minor-events-dot--pink" />
                         </div>
                     </div>
                 </section>
@@ -227,8 +219,8 @@ export default function MinorEvents() {
 
                         <div className="minor-events-dots minor-events-animate minor-events-animate-delay-5" style={{ transitionDelay: '0.85s' }}>
                             <span className="minor-events-dot minor-events-dot--cyan" />
-                            <span className="minor-events-dot minor-events-dot--pink" />
                             <span className="minor-events-dot minor-events-dot--cyan" />
+                            <span className="minor-events-dot minor-events-dot--pink" />
                         </div>
                     </div>
                 </section>

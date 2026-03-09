@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
-import CosmicBackground from './CosmicBackground';
+import { useEffect, useRef, memo } from 'react';
+
 import './About.css';
 
-export default function About() {
+const About = memo(function About() {
     const sectionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -26,16 +26,8 @@ export default function About() {
 
     return (
         <div className="about-page" ref={sectionRef}>
-            {/* ── FIXED BACKGROUND — shared across all sections ──────── */}
-            <div className="about-fixed-bg">
-                <CosmicBackground />
-            </div>
-            <img
-                src="/favicon-nobg.webp"
-                alt=""
-                className="about-fixed-watermark"
-                draggable={false}
-            />
+
+
 
             {/* ── HERO — LANDING SECTION ───────────────────────────────── */}
             <section className="about-hero">
@@ -200,4 +192,6 @@ export default function About() {
             </div>
         </div>
     );
-}
+});
+
+export default About;

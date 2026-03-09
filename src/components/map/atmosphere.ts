@@ -25,34 +25,35 @@ export const createFloatingDust = (
   scene: THREE.Scene,
   count = 120,
 ): DustField => {
-  const positions  = new Float32Array(count * 3);
+  const positions = new Float32Array(count * 3);
   const velocities = new Float32Array(count * 3);
-  const colors     = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
 
   for (let i = 0; i < count; i++) {
-    positions[i * 3]     = (Math.random() - 0.5) * 110;
+    positions[i * 3] = (Math.random() - 0.5) * 110;
     positions[i * 3 + 1] = 0.5 + Math.random() * 13;
     positions[i * 3 + 2] = (Math.random() - 0.5) * 110;
 
-    velocities[i * 3]     = (Math.random() - 0.5) * 0.055;
+    velocities[i * 3] = (Math.random() - 0.5) * 0.055;
     velocities[i * 3 + 1] = 0.025 + Math.random() * 0.038;
     velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.055;
 
     const c = DUST_PALETTE[Math.floor(Math.random() * DUST_PALETTE.length)];
     const dim = 0.35 + Math.random() * 0.30; // 0.35–0.65 brightness range
-    colors[i * 3]     = c.r * dim;
+    colors[i * 3] = c.r * dim;
     colors[i * 3 + 1] = c.g * dim;
     colors[i * 3 + 2] = c.b * dim;
   }
 
-  const geometry    = new THREE.BufferGeometry();
+  const geometry = new THREE.BufferGeometry();
   const positionAttr = new THREE.BufferAttribute(positions, 3);
-  const colorAttr    = new THREE.BufferAttribute(colors, 3);
+  const colorAttr = new THREE.BufferAttribute(colors, 3);
   geometry.setAttribute('position', positionAttr);
-  geometry.setAttribute('color',    colorAttr);
+  geometry.setAttribute('color', colorAttr);
 
   const material = new THREE.PointsMaterial({
-    size: 0.10,
+    size: 0.3,
+
     vertexColors: true,
     transparent: true,
     opacity: 0.28,
@@ -87,11 +88,11 @@ export const createFloatingDust = (
       positions[z] += velocities[z] * step;
 
       // Wrap boundaries
-      if (positions[y] > 16)  positions[y] = 0.5;
-      if (positions[x] >  60) positions[x] = -60;
-      if (positions[x] < -60) positions[x] =  60;
-      if (positions[z] >  60) positions[z] = -60;
-      if (positions[z] < -60) positions[z] =  60;
+      if (positions[y] > 16) positions[y] = 0.5;
+      if (positions[x] > 60) positions[x] = -60;
+      if (positions[x] < -60) positions[x] = 60;
+      if (positions[z] > 60) positions[z] = -60;
+      if (positions[z] < -60) positions[z] = 60;
     }
 
     positionAttr.needsUpdate = true;
