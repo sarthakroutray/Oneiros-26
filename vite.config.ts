@@ -22,10 +22,10 @@ export default defineConfig({
           router: ['react-router-dom'],
           three: ['three'],
           motion: ['motion'],
-          icons: ['lucide-react'], // If used, otherwise it's safe to keep
         },
       },
     },
     chunkSizeWarningLimit: 1000,
   },
 })
+
