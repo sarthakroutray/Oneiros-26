@@ -755,11 +755,13 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       if (!renderingEnabled) return;
 
       // ── GPU PAUSE ────────────────────────────────────────────────────────
-      // If a React UI overlay is open, seamlessly freeze the 3D scene.
-      // This immediately frees all computing power to render heavy DOM components,
-      // fixing the transition stutter caused by simultaneous rendering contention.
+      // If a React UI overlay is open, we stop all physics, animation, and logic updates.
+      // However, we MUST still call renderer.render() to keep the last frame visible
+      // on the canvas; otherwise, some browsers/devices will clear the buffer to black.
       if (activePageRef.current) {
         hideMarkerPrompt();
+        if (postFxRuntime) postFxRuntime.composer.render();
+        else renderer.render(scene, camera);
         return;
       }
 
@@ -828,18 +830,24 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         charRotY += diff * Math.min(TURN_SPEED * dt, 1.0);
       }
 
-      // ── AUTO-ROTATE CAMERA BEHIND CHARACTER ──────────────────────────────────
-      // Removed: Auto-rotating continuous movement causes a feedback loop where moving backward or sideways
-      // swings the camera, changing the move direction interactively and looping continuously.
-      /*
+      // ── AUTO-FOLLOW CAMERA ───────────────────────────────────────────────────
+      // Automatically swings the camera to stay behind the character during movement.
+      // This creates a much more cinematic and immersive 3rd-person experience.
       if (moving && !isDragging && camTouchId === null && !isIntroActive) {
-        const targetCamYaw = charRotY + Math.PI;
-        let yawDiff = targetCamYaw - camYaw;
-        while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
-        while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
-        camYaw += yawDiff * Math.min(3.0 * dt, 1.0);
+        // We follow when moving forward or strafing/turning (A,D).
+        // For pure backward movement (inputY < -0.1), we don't snap the camera 180°
+        // to avoid the "backward jitter" feedback loop where the camera and character 
+        // fight over the orientation.
+        if (inputY > -0.1) {
+          const targetCamYaw = charRotY + Math.PI;
+          let yawDiff = targetCamYaw - camYaw;
+          while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
+          while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
+
+          // Smoothly rotate the camera yaw with a responsive follow speed.
+          camYaw += yawDiff * Math.min(2.2 * dt, 1.0);
+        }
       }
-      */
 
       if (charArmature) {
         const idleY = moving ? 0 : Math.sin(elapsed * 1.6) * 0.065;

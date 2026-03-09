@@ -117,9 +117,9 @@ export default function MinorEvents() {
                         </p>
 
                         <div className="minor-events-dots minor-events-animate minor-events-animate-delay-5">
+                            <span className="minor-events-dot minor-events-dot--cyan" />
+                            <span className="minor-events-dot minor-events-dot--cyan" />
                             <span className="minor-events-dot minor-events-dot--pink" />
-                            <span className="minor-events-dot minor-events-dot--cyan" />
-                            <span className="minor-events-dot minor-events-dot--cyan" />
                         </div>
                     </div>
                 </section>
@@ -152,8 +152,8 @@ export default function MinorEvents() {
 
                         <div className="minor-events-dots minor-events-animate minor-events-animate-delay-5" style={{ transitionDelay: '0.85s' }}>
                             <span className="minor-events-dot minor-events-dot--cyan" />
-                            <span className="minor-events-dot minor-events-dot--pink" />
                             <span className="minor-events-dot minor-events-dot--cyan" />
+                            <span className="minor-events-dot minor-events-dot--pink" />
                         </div>
                     </div>
                 </section>
@@ -219,8 +219,8 @@ export default function MinorEvents() {
 
                         <div className="minor-events-dots minor-events-animate minor-events-animate-delay-5" style={{ transitionDelay: '0.85s' }}>
                             <span className="minor-events-dot minor-events-dot--cyan" />
-                            <span className="minor-events-dot minor-events-dot--pink" />
                             <span className="minor-events-dot minor-events-dot--cyan" />
+                            <span className="minor-events-dot minor-events-dot--pink" />
                         </div>
                     </div>
                 </section>

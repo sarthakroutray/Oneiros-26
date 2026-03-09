@@ -220,7 +220,7 @@ const EventSection = memo(function EventSection({ event }: { event: Event }) {
             {event.description}
           </p>
           <div className="flex items-center gap-3">
-            {[PINK, CYAN, CYAN].map((color, i) => (
+            {[CYAN, CYAN, PINK].map((color, i) => (
               <div key={i} style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}aa` }} />
             ))}
           </div>
@@ -284,7 +284,7 @@ const EventSection = memo(function EventSection({ event }: { event: Event }) {
           </p>
 
           <div className="flex items-center justify-center gap-3">
-            {[PINK, CYAN, CYAN].map((color, i) => (
+            {[CYAN, CYAN, PINK].map((color, i) => (
               <div key={i} style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 6px ${color}aa` }} />
             ))}
           </div>
@@ -379,7 +379,7 @@ export default function MajorEvents() {
 
           <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.6 }}
             className="flex items-center gap-3" style={{ marginTop: "2.5rem" }}>
-            {[CYAN, PINK, CYAN].map((color, i) => (
+            {[CYAN, CYAN, PINK].map((color, i) => (
               <div key={i} style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: color, boxShadow: `0 0 8px ${color}aa` }} />
             ))}
           </motion.div>

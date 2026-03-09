@@ -151,7 +151,7 @@
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .teleport-bar {
-        bottom: 140px;
+        bottom: 210px;
         left: 0;
         right: 0;
         transform: none;
