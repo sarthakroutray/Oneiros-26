@@ -30,12 +30,13 @@ export const qualityProfileFor = (level: QualityLevel): QualityProfile => {
       bloomStrength: 0,
       bloomRadius: 0,
       bloomThreshold: 1,
-      enableParticles: false,
-      particleCountScale: 0.2,
+      enableParticles: true,
+      particleCountScale: 0.25,
       enableShaderGrid: true, // Re-enable shader grid even on LOW
       shadowMapSize: 512,
       enableDynamicLights: false,
     };
+
   }
 
   if (level === 'MEDIUM') {

@@ -291,9 +291,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     sCtx.fillStyle = grd;
     sCtx.fillRect(0, 0, 64, 64);
     const spriteTex = new THREE.CanvasTexture(spriteCanvas);
+    spriteTex.needsUpdate = true;
 
     const emberMat = new THREE.PointsMaterial({
-      size: 0.5,
+      size: 0.8,
       map: spriteTex,
       vertexColors: true,
       transparent: true,
