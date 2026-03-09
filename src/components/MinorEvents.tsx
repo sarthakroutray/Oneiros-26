@@ -78,7 +78,7 @@ export default function MinorEvents() {
                 <CosmicBackground />
             </div>
             <img
-                src="/favicon-nobg.png"
+                src="/favicon-nobg.webp"
                 alt=""
                 className="minor-events-fixed-watermark"
                 draggable={false}

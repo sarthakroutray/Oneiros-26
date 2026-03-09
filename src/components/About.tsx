@@ -31,7 +31,7 @@ export default function About() {
                 <CosmicBackground />
             </div>
             <img
-                src="/favicon-nobg.png"
+                src="/favicon-nobg.webp"
                 alt=""
                 className="about-fixed-watermark"
                 draggable={false}

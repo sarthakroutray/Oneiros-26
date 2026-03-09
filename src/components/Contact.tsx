@@ -30,7 +30,7 @@ export default function Contact() {
 
     const sendEmail = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!formRef.current) return;
         setIsSubmitting(true);
         setSubmitStatus('idle');
@@ -39,7 +39,7 @@ export default function Contact() {
         // You can get these from https://dashboard.emailjs.com/
         const SERVICE_ID = 'service_xpl1j1u';
         const TEMPLATE_ID = 'template_b3ydgot';
-        const PUBLIC_KEY = 'X3tahPLHPIo_zf6vn'; 
+        const PUBLIC_KEY = 'X3tahPLHPIo_zf6vn';
 
         emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, formRef.current, PUBLIC_KEY)
             .then(() => {
@@ -64,7 +64,7 @@ export default function Contact() {
                 <CosmicBackground />
             </div>
             <img
-                src="/favicon-nobg.png"
+                src="/favicon-nobg.webp"
                 alt=""
                 className="contact-fixed-watermark"
                 draggable={false}
@@ -103,7 +103,7 @@ export default function Contact() {
                         </p>
 
                         <div className="contact-flex-container">
-                            
+
                             {/* ── CONTACT INFO SIDE ────────────────────────── */}
                             <div className="contact-info-side contact-animate contact-animate-delay-4">
                                 <div className="contact-info-card">
@@ -117,14 +117,14 @@ export default function Contact() {
                                 <div className="contact-info-card">
                                     <h3 className="info-card-title">Agam Bhasin</h3>
                                     <p className="info-card-detail">
-                                        <a href="mailto:bhasinagamm@gmail.com">bhasinagamm@gmail.com</a><br/>
+                                        <a href="mailto:bhasinagamm@gmail.com">bhasinagamm@gmail.com</a><br />
                                         +91 86014 44494
                                     </p>
                                 </div>
                                 <div className="contact-info-card">
                                     <h3 className="info-card-title">Janvi Chawla</h3>
                                     <p className="info-card-detail">
-                                        <a href="mailto:JanviChawla2615@gmail.com">JanviChawla2615@gmail.com</a><br/>
+                                        <a href="mailto:JanviChawla2615@gmail.com">JanviChawla2615@gmail.com</a><br />
                                         +91 84338 21606
                                     </p>
                                 </div>
@@ -137,22 +137,22 @@ export default function Contact() {
                                         <label htmlFor="name">Name</label>
                                         <input type="text" id="name" name="name" required placeholder="John Doe" />
                                     </div>
-                                    
+
                                     <div className="form-group">
                                         <label htmlFor="email">Email</label>
                                         <input type="email" id="email" name="email" required placeholder="john@example.com" />
                                     </div>
-                                    
+
                                     <div className="form-group">
                                         <label htmlFor="title">Subject</label>
                                         <input type="text" id="title" name="title" required placeholder="How can we help?" />
                                     </div>
-                                    
+
                                     <div className="form-group">
                                         <label htmlFor="message">Message</label>
                                         <textarea id="message" name="message" required placeholder="Your message here..."></textarea>
                                     </div>
-                                    
+
                                     <button type="submit" className="submit-btn" disabled={isSubmitting}>
                                         {isSubmitting ? 'Transmitting...' : 'Send Message'}
                                     </button>

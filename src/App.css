@@ -4,6 +4,18 @@
   background: #000;
 }
 
+.seo-homepage-heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .page-overlay {
   position: fixed;
   inset: 0;
@@ -48,4 +60,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* ── BACK HINT: desktop shows static badge, mobile shows tappable pill ── */
+.back-hint-desktop {
+  display: block;
+}
+
+.back-hint-mobile {
+  display: none !important;
+}
+
+@media (max-width: 1023px),
+(hover: none) and (pointer: coarse) {
+  .back-hint-desktop {
+    display: none !important;
+  }
+
+  .back-hint-mobile {
+    display: flex !important;
+  }
 }

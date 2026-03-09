@@ -13,7 +13,7 @@
  */
 
 import sharp from 'sharp';
-import { readdirSync, statSync } from 'fs';
+import { readdirSync, statSync, existsSync } from 'fs';
 import { join, extname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -87,6 +87,12 @@ async function compressFavicon() {
     const input = join(PUBLIC, 'favicon.png');
     const tmpOutput = join(PUBLIC, 'favicon-optimized.png');
     await compressPNG(input, tmpOutput, 256);
+
+    const nobgInput = join(PUBLIC, 'favicon-nobg.png');
+    const nobgOutput = join(PUBLIC, 'favicon-nobg.webp');
+    if (fs.existsSync(nobgInput)) {
+        await compressToWebP(nobgInput, nobgOutput, 256, 85);
+    }
 }
 
 /* ── 4. Team images ──────────────────────────────────────────────────── */

@@ -1,0 +1,317 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@400;500;600;700;900&display=swap');
+
+.sponsors-page {
+    width: 100%;
+    background: radial-gradient(ellipse at 50% 30%, #060818 0%, #02030a 50%, #000 100%);
+    color: #fff;
+    overflow: hidden;
+}
+
+/* ── FIXED BACKGROUND ─────────────────────────────────────────────────── */
+.sponsors-fixed-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.sponsors-fixed-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(60vw, 480px);
+    height: auto;
+    opacity: 0.09;
+    filter: blur(2px) brightness(1.3);
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
+}
+
+/* ── LOWER WRAPPER ─────────────────────────────────────────────────────────── */
+.sponsors-lower-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+/* ── HERO ─────────────────────────────────────────────────────────────────── */
+.sponsors-hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.sponsors-hero-title {
+    position: relative;
+    z-index: 2;
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.8rem, 8vw, 6.5rem);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow:
+        0 0 40px rgba(255, 255, 255, 0.15),
+        0 0 80px rgba(200, 210, 255, 0.08);
+    margin: 0;
+    line-height: 1.1;
+    text-align: center;
+}
+
+.sponsors-hero-tagline {
+    position: relative;
+    z-index: 2;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.9rem, 2vw, 1.25rem);
+    font-weight: 400;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.sponsors-tagline-dot {
+    display: inline-block;
+    margin: 0 1.2em;
+    opacity: 0.4;
+}
+
+.sponsors-hero-scroll {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    animation: sponsorsBounce 2s ease-in-out infinite;
+}
+
+.sponsors-hero-scroll-line {
+    width: 1px;
+    height: 36px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.sponsors-hero-scroll-text {
+    font-family: 'Manrope', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes sponsorsBounce {
+
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(8px);
+    }
+}
+
+/* ── CONTENT SECTIONS ──────────────────────────────────────────────────── */
+.sponsors-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem;
+}
+
+.sponsors-previous {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5rem 2rem 8rem;
+    gap: 4rem;
+}
+
+.sponsors-content-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    text-align: center;
+}
+
+/* ── TYPOGRAPHY ────────────────────────────────────────────────────────── */
+.sponsors-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: #4dd8e6;
+    margin-bottom: 1rem;
+}
+
+.sponsors-heading {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    color: #fff;
+    margin: 0 0 1rem;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+}
+
+.sponsors-subheading {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.15rem, 2.5vw, 1.6rem);
+    font-weight: 400;
+    font-style: italic;
+    color: rgba(180, 200, 230, 0.7);
+    margin-bottom: 2.5rem;
+    letter-spacing: 0.04em;
+}
+
+/* ── COMING SOON ───────────────────────────────────────────────────────── */
+.sponsors-coming-soon {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: #fff;
+    margin: 0;
+    text-shadow:
+        0 0 30px rgba(255, 255, 255, 0.12),
+        0 0 60px rgba(77, 216, 230, 0.06);
+}
+
+.sponsors-coming-soon-sub {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.95rem, 1.8vw, 1.2rem);
+    font-style: italic;
+    color: rgba(180, 200, 230, 0.6);
+    letter-spacing: 0.04em;
+    margin: 0;
+}
+
+/* ── PREVIOUS SPONSORS IMAGE ───────────────────────────────────────────── */
+.sponsors-image-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+}
+
+.sponsors-prev-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(77, 216, 230, 0.06);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s ease;
+}
+
+.sponsors-prev-image:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(77, 216, 230, 0.1);
+}
+
+.sponsors-image-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: radial-gradient(ellipse at 50% 100%, rgba(77, 216, 230, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* ── DECORATIVE DOTS ───────────────────────────────────────────────────── */
+.sponsors-dots {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    margin-top: 3rem;
+}
+
+.sponsors-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.sponsors-dot--pink {
+    background: #e84393;
+    box-shadow: 0 0 10px rgba(232, 67, 147, 0.5);
+}
+
+.sponsors-dot--cyan {
+    background: #00d2d3;
+    box-shadow: 0 0 10px rgba(0, 210, 211, 0.5);
+}
+
+/* ── SCROLL ANIMATIONS ─────────────────────────────────────────────────── */
+.sponsors-animate {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sponsors-animate.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.sponsors-animate-delay-1 {
+    transition-delay: 0.1s;
+}
+
+.sponsors-animate-delay-2 {
+    transition-delay: 0.25s;
+}
+
+.sponsors-animate-delay-3 {
+    transition-delay: 0.4s;
+}
+
+.sponsors-animate-delay-4 {
+    transition-delay: 0.55s;
+}
+
+.sponsors-animate-delay-5 {
+    transition-delay: 0.7s;
+}
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .sponsors-content {
+        padding: 4rem 1.5rem;
+    }
+
+    .sponsors-previous {
+        padding: 4rem 1.5rem 6rem;
+        gap: 3rem;
+    }
+
+    .sponsors-image-wrap {
+        max-width: 100%;
+    }
+}

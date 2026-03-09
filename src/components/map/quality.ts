@@ -32,7 +32,7 @@ export const qualityProfileFor = (level: QualityLevel): QualityProfile => {
       bloomThreshold: 1,
       enableParticles: false,
       particleCountScale: 0.2,
-      enableShaderGrid: false,
+      enableShaderGrid: true, // Re-enable shader grid even on LOW
       shadowMapSize: 512,
       enableDynamicLights: false,
     };

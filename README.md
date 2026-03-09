@@ -1,79 +1,88 @@
 # Oneiros-26
 
-Oneiros-26 is an immersive 3D festival web experience built with React, Vite, and Three.js.  
-The project combines a cinematic real-time scene, adaptive quality scaling, and progressive loading to deliver a premium visual identity while maintaining strong performance across mobile and desktop devices.
+Oneiros-26 is the official website for **Oneiros 2026**, the annual cultural fest of **Manipal University Jaipur**. It is built as a cinematic, single-page React experience with a full-screen Three.js world, lazy-loaded content overlays, and a mobile-aware rendering pipeline.
 
-## Overview
+![Oneiros 2026 preview](./public/preview.png)
 
-The application is designed around a full-screen interactive world:
+## Highlights
 
-- Neon retro-futuristic environment with animated shader floor and atmospheric depth
-- 3D scene navigation and character-driven exploration
-- Section-based content overlays (About, Events, Gallery, Schedule, Sponsors, Contact)
-- Device-aware rendering quality profiles for stable cross-device experience
-
-## Core Architecture
-
-The codebase is intentionally modular and split by responsibility:
-
-- **UI Layer (React):** App shell, navigation, overlays, preloader, and section components
-- **3D Runtime (Three.js):** Scene creation, model loading, controls, effects, and animation loop
-- **Scene Modules:** Isolated map systems for loading, markers, quality, atmosphere, post-processing, and enhancement logic
-
-This separation enables rapid iteration on visuals without coupling scene logic to UI components.
-
-## Rendering & Experience Pipeline
-
-The 3D pipeline follows a staged initialization strategy:
-
-1. Basic scene initialization and first paint
-2. Deferred heavy module loading (post-processing + GLTF loader)
-3. Parallel model asset loading
-4. Runtime activation of enhanced effects based on device capability
-
-Visual stack includes:
-
-- Cinematic key/rim/fill lighting
-- Exponential fog and ambient depth layers
-- Starfield and lightweight particle systems
-- Unreal Bloom + vignette post-processing
-- Model-specific enhancement hooks for emissive flicker and subtle effects
-
-## Adaptive Quality System
-
-The runtime auto-selects **LOW / MEDIUM / HIGH** tiers using:
-
-- Device type heuristics (UA + viewport)
-- GPU renderer fingerprint (when available)
-- Device memory and hardware concurrency
-
-Quality profile controls:
-
-- Pixel ratio cap
-- Bloom enable/strength
-- Particle density and visibility
-- Shader usage fallback paths
-- Dynamic light and shadow intensity
-
-An FPS safety monitor automatically downgrades quality when sustained low frame rate is detected.
+- Full-screen 3D landing experience powered by `three`
+- Intro preloader with video playback before the interactive scene begins
+- Route-driven overlays for `About`, `Team`, `Major Events`, `Minor Events`, `Artists`, `Gallery`, `Schedule`, `Sponsors`, and `Contact`
+- Keyboard and touch-friendly world navigation with marker-based page transitions
+- Adaptive rendering quality for lower-end mobile devices and higher-end desktops
+- Lazy loading for heavier sections and runtime chunk splitting via Vite
+- Contact form integration using `@emailjs/browser`
 
 ## Tech Stack
 
-- **Frontend:** React 19, TypeScript, Vite
-- **3D Engine:** Three.js
-- **Styling:** Tailwind CSS + component-level CSS
-- **Tooling:** ESLint, TypeScript build mode
+- React 19
+- TypeScript
+- Vite 7
+- Three.js
+- Motion
+- Tailwind CSS 4
+- ESLint
 
 ## Project Structure
 
-High-value directories and files:
+```text
+.
+|-- public/                   # Static assets, 3D models, icons, preview image
+|-- scripts/                  # Utility scripts
+|-- src/
+|   |-- assets/               # Bundled media such as the intro video
+|   |-- components/
+|   |   |-- map/              # Scene systems: quality, markers, loading, FX, config
+|   |   |-- Map.tsx           # Main Three.js runtime and navigation bridge
+|   |   |-- Navbar.tsx        # Top navigation
+|   |   |-- Preloader.tsx     # Intro/loading sequence
+|   |   |-- About.tsx         # Festival overview
+|   |   |-- Team.tsx          # Team showcase
+|   |   |-- MajorEvents.tsx   # Major events experience
+|   |   |-- MinorEvents.tsx   # Minor events + gallery dome
+|   |   |-- Artist.tsx        # Artist section
+|   |   |-- Schedule.tsx      # Schedule placeholder
+|   |   |-- Sponsors.tsx      # Sponsors and previous sponsors
+|   |   `-- Contact.tsx       # Contact info and EmailJS form
+|   |-- App.tsx               # Router, overlays, preloader, navbar shell
+|   `-- main.tsx              # React entry point
+|-- vercel.json               # SPA rewrites for Vercel
+`-- vite.config.ts            # Build config, chunking, compression
+```
 
-- `src/App.tsx` — App shell and page routing overlays
-- `src/components/Map.tsx` — Main scene orchestrator
-- `src/components/map/` — Modular 3D systems (`quality`, `loading`, `postprocessing`, `atmosphere`, `markers`, `input`, `neon`, `sceneEnhancements`)
-- `public/` — Static assets and GLTF/WebM resources
+## Experience Model
 
-## Getting Started
+The homepage mounts the 3D scene immediately, then reveals the interactive world after the intro finishes. Section pages are loaded as overlays on top of the scene, so the world remains mounted in the background while users move through content.
+
+The current navigation flow includes:
+
+- `/` for the interactive landing scene
+- `/about`
+- `/team`
+- `/major-events`
+- `/minor-events`
+- `/artist`
+- `/gallery`
+- `/schedule`
+- `/sponsors`
+- `/contact`
+
+## 3D Runtime Notes
+
+The scene runtime in [`src/components/Map.tsx`](./src/components/Map.tsx) currently includes:
+
+- automatic device and quality detection
+- cinematic lighting and fog
+- particle systems and ambient effects
+- GLB loading for the environment and character
+- marker prompts that connect the 3D world to page overlays
+- mobile joystick support and keyboard movement states
+- post-processing hooks with bloom enabled by quality profile
+
+Supporting scene modules live in [`src/components/map/`](./src/components/map).
+
+## Local Development
 
 ### Prerequisites
 
@@ -86,19 +95,21 @@ High-value directories and files:
 npm install
 ```
 
-### Development
+### Start the dev server
 
 ```bash
 npm run dev
 ```
 
-### Production Build
+The Vite dev server is exposed with `--host`, so it can be reached from other devices on the same network.
+
+### Build for production
 
 ```bash
 npm run build
 ```
 
-### Preview Build
+### Preview the production build
 
 ```bash
 npm run preview
@@ -110,17 +121,34 @@ npm run preview
 npm run lint
 ```
 
-## Performance Strategy
+## Deployment
 
-The project prioritizes startup and runtime efficiency through:
+This project is configured as a client-side SPA.
 
-- Progressive scene boot sequence
-- Dynamic import code-splitting for heavy Three.js modules
-- Parallelized asset loading flow
-- Adaptive visual quality by device capability
-- Controlled post-processing and particle budgets
+- [`vercel.json`](./vercel.json) rewrites all routes to `index.html`
+- [`public/_redirects`](./public/_redirects) provides the same fallback for static hosting setups such as Netlify-style deployments
+- the production build is emitted to `dist/`
 
-This strategy keeps visual quality high on capable hardware while preserving usability on constrained devices.
+## Content and Assets
+
+- `public/map.glb` contains the main world model
+- `public/character.glb` contains the player character model
+- `public/minor_events/` contains the minor-events image archive
+- `public/team/` contains team portraits
+- `src/assets/intro_enhanced.webm` is the intro/preloader video
+
+## Contact Form
+
+The contact page uses EmailJS through [`src/components/Contact.tsx`](./src/components/Contact.tsx). The service ID, template ID, and public key are currently defined in that component.
+
+If those credentials change, update the constants there or move them to environment variables before deployment.
+
+## Current State
+
+- `About`, `Team`, `Major Events`, `Minor Events`, `Artists`, `Sponsors`, and `Contact` are implemented
+- `Gallery` and `Schedule` are present as styled coming-soon sections
+- the app is front-end only; there is no custom backend in this repository
+- no automated test suite is currently configured
 
 ## License
 

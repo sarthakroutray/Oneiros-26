@@ -31,7 +31,7 @@ export default function Artist() {
                 <CosmicBackground />
             </div>
             <img
-                src="/favicon-nobg.png"
+                src="/favicon-nobg.webp"
                 alt=""
                 className="artist-fixed-watermark"
                 draggable={false}
@@ -42,7 +42,7 @@ export default function Artist() {
                 <h1 className="artist-hero-title">ARTISTS</h1>
 
                 <p className="artist-hero-tagline">
-             
+
                     <span className="tagline-dot">·</span>
                     STARS OF THE NIGHT
                 </p>
@@ -71,8 +71,8 @@ export default function Artist() {
                         </p>
 
                         <p className="artist-body artist-animate artist-animate-delay-4">
-                            Stay tuned as we unveil the stellar lineup for Oneiros 2026. 
-                            Prepare to be enthralled by musical maestros, electrifying DJs, 
+                            Stay tuned as we unveil the stellar lineup for Oneiros 2026.
+                            Prepare to be enthralled by musical maestros, electrifying DJs,
                             and visionary performers who will illuminate our Cosmic Canvas.
                         </p>
                     </div>

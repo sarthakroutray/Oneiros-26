@@ -19,9 +19,10 @@ export const updateMovementKey = (
   key: string,
   isDown: boolean,
 ) => {
-  if (key === 'w' || key === 'W' || key === 'ArrowUp') keys.w = isDown;
-  if (key === 'a' || key === 'A' || key === 'ArrowLeft') keys.a = isDown;
-  if (key === 's' || key === 'S' || key === 'ArrowDown') keys.s = isDown;
-  if (key === 'd' || key === 'D' || key === 'ArrowRight') keys.d = isDown;
-  if (key === 'Shift') keys.shift = isDown;
+  const k = key.toLowerCase();
+  if (k === 'w' || key === 'arrowup') keys.w = isDown;
+  if (k === 'a' || key === 'arrowleft') keys.a = isDown;
+  if (k === 's' || key === 'arrowdown') keys.s = isDown;
+  if (k === 'd' || key === 'arrowright') keys.d = isDown;
+  if (k === 'shift') keys.shift = isDown;
 };

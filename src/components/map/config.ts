@@ -1,8 +1,8 @@
 export const GROUND_Y = 0;
 export const BOUNDARY_RADIUS = 58;
-export const WALK_SPEED = 8;
-export const RUN_SPEED = 18;
-export const TURN_SPEED = 12;
+export const WALK_SPEED = 14;
+export const RUN_SPEED = 32;
+export const TURN_SPEED = 14;
 export const CAM_DIST_DEFAULT = 22;
 export const CAM_DIST_MIN = 3;
 export const CAM_DIST_MAX = 40;
@@ -19,13 +19,13 @@ export type MarkerDef = {
   color: number;
 };
 
-export const MARKER_INTERACT_RADIUS = 6;
-export const MARKER_ACTIVATE_RADIUS = 4;
+export const MARKER_INTERACT_RADIUS = 14;
+export const MARKER_ACTIVATE_RADIUS = 14;
 export const MARKER_DEFS: MarkerDef[] = [
-  { page: 'about', label: 'About', pos: [-27, 0, -52], color: 0x00ffee },
-  { page: 'major-events', label: 'Major Events', pos: [60, 0, 6], color: 0xff6ef9 },
-  { page: 'minor-events', label: 'Minor Events', pos: [30, 0,-50], color: 0xcc44ff },
-  { page: 'artist', label: 'Artist', pos: [-55.3, 0, 10], color: 0xffcc00 },
+  { page: 'about', label: 'About', pos: [-25, 0, -50], color: 0x00ffee },
+  { page: 'major-events', label: 'Major Events', pos: [56, 0, 6], color: 0xff6ef9 },
+  { page: 'minor-events', label: 'Minor Events', pos: [28, 0, -48], color: 0xcc44ff },
+  { page: 'artist', label: 'Artist', pos: [-55, 0, 10], color: 0xffcc00 },
 ];
 
 export const STATE_IDLE = 0;
