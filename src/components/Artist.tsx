@@ -14,9 +14,9 @@ interface ArtistProp {
 }
 
 const day2Artists: ArtistProp[] = [
-    { name: "Akshay Barodia", image: "/Artists/Akshay_Barodia.webp", role: "The Groove Master", color: PURPLE },
+    { name: "Akshay Barodia", image: "/Artists/DJ1.png", role: "The Groove Master", color: PURPLE },
     { name: "DJ Jerry", image: "/Artists/Dj_Jerry.webp", role: "Electrifying Beats", color: CYAN },
-    { name: "Kamandal", image: "/Artists/Kamandal.webp", role: "Rocking the Cosmos", color: PINK },
+    { name: "Kamandal", image: "/Artists/DJ2.png", role: "Rocking the Cosmos", color: PINK },
 ];
 
 const SectionDivider = memo(() => (

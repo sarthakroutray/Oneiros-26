@@ -6,6 +6,7 @@ export type MarkerRuntime = {
   label: string;
   pos: THREE.Vector3;
   color: number;
+  externalUrl?: string;
   group: THREE.Group;
   beam: THREE.Mesh;
   chevron: THREE.Mesh;
@@ -186,6 +187,7 @@ export const createSceneMarkers = (
       label: def.label,
       pos: new THREE.Vector3(def.pos[0], def.pos[1], def.pos[2]),
       color: def.color,
+      externalUrl: def.externalUrl,
       group,
       beam,
       chevron,

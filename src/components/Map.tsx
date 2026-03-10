@@ -324,6 +324,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       const dz = charPos.z - m.pos.z;
       if (Math.sqrt(dx * dx + dz * dz) <= MARKER_ACTIVATE_RADIUS) {
         hideMarkerPrompt();
+        if (m.externalUrl) {
+          window.open(m.externalUrl, '_blank', 'noopener,noreferrer');
+          return;
+        }
         onNavigateRef.current?.(m.page);
       }
     };
