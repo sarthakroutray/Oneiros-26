@@ -6,8 +6,29 @@ export type LoadedGLTF = {
   animations: THREE.AnimationClip[];
 };
 
+const sharedLoader = new GLTFLoader();
+const glbPromiseCache = new Map<string, Promise<LoadedGLTF>>();
+
 export const loadGLB = (loader: GLTFLoader, url: string) =>
   new Promise<LoadedGLTF>((res, rej) => loader.load(url, res, undefined, rej));
+
+export const preloadGLB = (url: string) => {
+  const cached = glbPromiseCache.get(url);
+  if (cached) return cached;
+
+  const pending = loadGLB(sharedLoader, url).catch((error) => {
+    glbPromiseCache.delete(url);
+    throw error;
+  });
+
+  glbPromiseCache.set(url, pending);
+  return pending;
+};
+
+export const preloadInitialExperienceAssets = () => Promise.allSettled([
+  preloadGLB('/map.glb'),
+  preloadGLB('/character.glb'),
+]);
 
 export const enableMeshShadows = (root: THREE.Object3D) => {
   root.traverse((node: THREE.Object3D) => {

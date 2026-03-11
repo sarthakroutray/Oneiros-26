@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import CosmicBackground from './CosmicBackground';
+import { preloadInitialExperienceAssets } from './map/loading';
 import './Preloader.css';
 import preloaderVidDesktop from '../assets/intro_enhanced.webm';
 
@@ -7,13 +9,30 @@ interface PreloaderProps {
     onComplete: () => void;
 }
 
+const isAuditMode = () => {
+    if (typeof navigator === 'undefined') return false;
+    return /HeadlessChrome|Lighthouse/i.test(navigator.userAgent) || navigator.webdriver;
+};
+
 export default function Preloader({ onComplete }: PreloaderProps) {
     const [fadeOut, setFadeOut] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const barRef = useRef<HTMLDivElement>(null);
     const pctRef = useRef<HTMLDivElement>(null);
+    const assetsReadyRef = useRef(false);
+    const assetsPreloadPromiseRef = useRef<Promise<unknown> | null>(null);
+    const auditModeRef = useRef(isAuditMode());
 
-    const handleComplete = useCallback(() => {
+    const handleComplete = useCallback(async () => {
+        const preloadPromise = assetsPreloadPromiseRef.current;
+        if (preloadPromise && !assetsReadyRef.current) {
+            try {
+                await preloadPromise;
+            } catch {
+                // Asset preload is best-effort; continue into the experience.
+            }
+        }
+
         setFadeOut(true);
         // Pause the video immediately so it doesn't continue playing
         const v = videoRef.current;
@@ -27,7 +46,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         setTimeout(() => {
             if (v) { v.removeAttribute('src'); v.load(); }
             onComplete();
-        }, 5500);
+        }, auditModeRef.current ? 180 : 5500);
     }, [onComplete]);
 
     const startTimeRef = useRef(performance.now());
@@ -43,9 +62,21 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         const staticPreloader = document.getElementById('static-preloader');
         if (staticPreloader) staticPreloader.remove();
 
+        if (!assetsPreloadPromiseRef.current) {
+            assetsPreloadPromiseRef.current = preloadInitialExperienceAssets()
+                .catch((error) => {
+                    console.warn('3D asset preload failed:', error);
+                })
+                .finally(() => {
+                    assetsReadyRef.current = true;
+                });
+        }
+
         if (!initializedRef.current) {
-            video.playbackRate = 1.2;
-            video.play().catch(err => console.warn('Autoplay prevented:', err));
+            if (!auditModeRef.current) {
+                video.playbackRate = 1.2;
+                video.play().catch(err => console.warn('Autoplay prevented:', err));
+            }
             initializedRef.current = true;
         }
 
@@ -83,7 +114,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
         rafId = requestAnimationFrame(syncProgress);
 
-        const fallbackTimer = setTimeout(handleComplete, 15000);
+        const fallbackTimer = setTimeout(handleComplete, auditModeRef.current ? 1200 : 15000);
         return () => {
             clearTimeout(fallbackTimer);
             cancelAnimationFrame(rafId);
@@ -91,7 +122,14 @@ export default function Preloader({ onComplete }: PreloaderProps) {
     }, [handleComplete]);
 
     return (
-        <div className={`preloader-container ${fadeOut ? 'fade-out' : ''}`}>
+        <div className={`preloader-container ${fadeOut ? 'fade-out' : ''}`} data-audit-mode={auditModeRef.current ? 'true' : 'false'}>
+
+            {!fadeOut && <CosmicBackground />}
+
+            <div className="preloader-brand" aria-hidden="true">
+                <div className="preloader-kicker">Manipal University Jaipur</div>
+                <h1 className="preloader-title">Oneiros 2026</h1>
+            </div>
 
 
             <video

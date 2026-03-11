@@ -5,8 +5,30 @@
 
 .artist-page {
     width: 100%;
+    background: radial-gradient(ellipse at 50% 30%, #060818 0%, #02030a 50%, #000 100%);
     color: #fff;
     overflow: hidden;
+}
+
+.artist-fixed-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.artist-fixed-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(60vw, 480px);
+    height: auto;
+    opacity: 0.09;
+    filter: blur(2px) brightness(1.3);
+    pointer-events: none;
+    z-index: 0;
+    user-select: none;
 }
 
 /* Custom Perspective for 3D transforms */

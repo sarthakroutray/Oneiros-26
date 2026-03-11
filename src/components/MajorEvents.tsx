@@ -1,5 +1,6 @@
 import { useRef, useState, memo } from "react";
 import { motion, useInView } from "motion/react";
+import CosmicBackground from "./CosmicBackground";
 
 import "./MajorEvents.css";
 
@@ -297,6 +298,16 @@ const EventSection = memo(function EventSection({ event }: { event: Event }) {
 export default function MajorEvents() {
   return (
     <div className="major-events-page" style={{ minHeight: "100vh", position: "relative" }}>
+
+      <div className="major-events-fixed-bg">
+        <CosmicBackground />
+      </div>
+      <img
+        src="/favicon-nobg.webp"
+        alt=""
+        className="major-events-fixed-watermark"
+        draggable={false}
+      />
 
 
 

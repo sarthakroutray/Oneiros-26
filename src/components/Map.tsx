@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { createMovementKeys, updateMovementKey } from './map/input';
 import { createMarkerPrompt, createSceneMarkers, setMarkerPromptState } from './map/markers';
-import { enableMeshShadows, fixMapMaterials, loadGLB, applyEmissionTweaks, type LoadedGLTF } from './map/loading';
+import { enableMeshShadows, fixMapMaterials, preloadGLB, applyEmissionTweaks, type LoadedGLTF } from './map/loading';
 
 import { applyAtmosphereFog, createFloatingDust } from './map/atmosphere';
 import { createNeonGridMaterial } from './map/neon';
@@ -1028,12 +1028,9 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     };
 
     const loadAssets = async () => {
-      const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
-      const loader = new GLTFLoader();
-
       const [mapResult, charResult] = await Promise.allSettled([
-        loadGLB(loader, '/map.glb'),
-        loadGLB(loader, '/character.glb'),
+        preloadGLB('/map.glb'),
+        preloadGLB('/character.glb'),
       ]);
 
       if (mapResult.status === 'fulfilled') {

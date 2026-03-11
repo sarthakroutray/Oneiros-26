@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import emailjs from '@emailjs/browser';
+import CosmicBackground from './CosmicBackground';
 
 import './Contact.css';
 
@@ -59,6 +60,16 @@ export default function Contact() {
 
     return (
         <div className="contact-page" ref={sectionRef}>
+
+            <div className="contact-fixed-bg">
+                <CosmicBackground />
+            </div>
+            <img
+                src="/favicon-nobg.webp"
+                alt=""
+                className="contact-fixed-watermark"
+                draggable={false}
+            />
 
 
 

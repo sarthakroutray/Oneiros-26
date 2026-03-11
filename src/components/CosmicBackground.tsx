@@ -1,13 +1,13 @@
-import React from 'react';
+import { memo } from 'react';
 import './CosmicBackground.css';
 
-// Pre-generate star field as a single background-image per layer
-// This avoids creating hundreds of DOM nodes — just 3 divs total.
+// Pre-generate a lightweight star field once at module load.
+// We keep the starry look but cut paint cost by reducing layer density.
 
 const LAYER_CONFIGS = [
-  { count: 600, sizeMin: 0.6, sizeMax: 1.8, duration: 120, opacity: 0.85 },
-  { count: 350, sizeMin: 1.2, sizeMax: 3.2, duration: 180, opacity: 0.6 },
-  { count: 200, sizeMin: 2.0, sizeMax: 4.5, duration: 240, opacity: 0.4 },
+  { count: 220, sizeMin: 0.6, sizeMax: 1.7, duration: 140, opacity: 0.82, glowChance: 0.10 },
+  { count: 120, sizeMin: 1.0, sizeMax: 2.8, duration: 200, opacity: 0.55, glowChance: 0.08 },
+  { count: 60, sizeMin: 1.8, sizeMax: 4.0, duration: 280, opacity: 0.34, glowChance: 0.05 },
 ];
 
 const COLORS = [
@@ -25,7 +25,7 @@ const COLORS = [
  * Generates a CSS radial-gradient background-image string containing
  * all stars for a given layer as tiny circles — zero extra DOM nodes.
  */
-const generateStarLayer = (cfg: typeof LAYER_CONFIGS[0]) => {
+const generateStarLayer = (cfg: typeof LAYER_CONFIGS[number]) => {
   const gradients: string[] = [];
   const shadows: string[] = [];
 
@@ -41,7 +41,7 @@ const generateStarLayer = (cfg: typeof LAYER_CONFIGS[0]) => {
     );
 
     // Add some glow via box-shadow (batched into one element)
-    if (Math.random() > 0.6) {
+    if (Math.random() < cfg.glowChance) {
       shadows.push(
         `${x.toFixed(1)}vw ${y.toFixed(1)}vh ${size * 2}px rgba(${rgb},${(cfg.opacity * 0.3).toFixed(2)})`
       );
@@ -65,17 +65,20 @@ const PRE_GENERATED_LAYERS = LAYER_CONFIGS.map((cfg, layerIdx) => {
         backgroundImage,
         backgroundSize: '100% 100%',
         backgroundRepeat: 'no-repeat',
-        boxShadow,
+        boxShadow: boxShadow || undefined,
         animation: `cosmic-rotate ${cfg.duration}s linear infinite`,
         willChange: 'transform',
+        contain: 'strict',
+        transform: 'translateZ(0)',
       }}
     />
   );
 });
 
-const CosmicBackground: React.FC = () => {
+const CosmicBackground = memo(function CosmicBackground() {
   return (
     <div
+      aria-hidden="true"
       style={{
         position: 'absolute',
         top: 0,
@@ -90,6 +93,6 @@ const CosmicBackground: React.FC = () => {
       {PRE_GENERATED_LAYERS}
     </div>
   );
-};
+});
 
 export default CosmicBackground;

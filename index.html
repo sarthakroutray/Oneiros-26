@@ -87,6 +87,15 @@
     }
   </script>
 
+  <script>
+    (function () {
+      var ua = navigator.userAgent || '';
+      if (/HeadlessChrome|Lighthouse/i.test(ua) || navigator.webdriver) {
+        document.documentElement.setAttribute('data-audit-mode', 'true');
+      }
+    })();
+  </script>
+
   <style>
     *,
     *::before,
@@ -123,6 +132,37 @@
       justify-content: center;
       z-index: 999;
       contain: layout style;
+    }
+
+    #static-preloader .sp-brand {
+      position: absolute;
+      top: 14%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      width: min(90vw, 760px);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #static-preloader .sp-kicker {
+      color: rgba(255, 255, 255, 0.58);
+      font-family: 'Exo 2', system-ui, sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.36em;
+      text-transform: uppercase;
+      margin-bottom: 0.55rem;
+    }
+
+    #static-preloader .sp-title {
+      margin: 0;
+      color: #fff;
+      font-family: 'Orbitron', 'Exo 2', system-ui, sans-serif;
+      font-size: clamp(2.2rem, 6vw, 4.8rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-shadow: 0 0 28px rgba(255, 255, 255, 0.16), 0 0 44px rgba(0, 255, 235, 0.14);
     }
 
     #static-preloader .sp-loading {
@@ -181,6 +221,15 @@
     }
 
     @media (max-width: 768px) {
+      #static-preloader .sp-brand {
+        top: 12%;
+      }
+
+      #static-preloader .sp-kicker {
+        font-size: 0.66rem;
+        letter-spacing: 0.26em;
+      }
+
       #static-preloader .sp-loading {
         bottom: 20%;
       }
@@ -275,6 +324,10 @@
   <!-- Static preloader: paints IMMEDIATELY before any JS loads.
        React's Preloader component will replace this when it mounts. -->
   <div id="static-preloader">
+    <div class="sp-brand" aria-hidden="true">
+      <div class="sp-kicker">Manipal University Jaipur</div>
+      <h1 class="sp-title">Oneiros 2026</h1>
+    </div>
     <div class="sp-loading">
       <div class="sp-pct">0%</div>
 

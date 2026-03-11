@@ -1,4 +1,5 @@
 import { useEffect, useRef, memo } from 'react';
+import CosmicBackground from './CosmicBackground';
 
 import './About.css';
 
@@ -26,6 +27,16 @@ const About = memo(function About() {
 
     return (
         <div className="about-page" ref={sectionRef}>
+
+            <div className="about-fixed-bg">
+                <CosmicBackground />
+            </div>
+            <img
+                src="/favicon-nobg.webp"
+                alt=""
+                className="about-fixed-watermark"
+                draggable={false}
+            />
 
 
 

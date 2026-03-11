@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react';
+import CosmicBackground from './CosmicBackground';
 
 import './Artist.css';
 
@@ -217,6 +218,16 @@ export default function Artist() {
 
     return (
         <div className="artist-page relative bg-transparent min-h-screen text-white overflow-hidden">
+            <div className="artist-fixed-bg">
+                <CosmicBackground />
+            </div>
+            <img
+                src="/favicon-nobg.webp"
+                alt=""
+                className="artist-fixed-watermark"
+                draggable={false}
+            />
+
             <HeroSection />
             <Day1Section />
             <SectionDivider />

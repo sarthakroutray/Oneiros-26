@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import CosmicBackground from './CosmicBackground';
 
 import './Team.css';
 
@@ -142,6 +143,10 @@ export default function Team() {
 
     return (
         <div className="team-page" ref={sectionRef}>
+
+            <div className="team-fixed-bg">
+                <CosmicBackground />
+            </div>
 
 
             <section className="team-hero">

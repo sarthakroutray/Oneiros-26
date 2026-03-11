@@ -83,7 +83,7 @@ function AppContent() {
       )}
 
       {/* ── MAIN EXPERIENCE ───────────────────────────────────────────────── */}
-      {/* Mounted immediately — WebGL initializes while preloader plays */}
+      {/* Mounted immediately so the 3D scene loads during the preloader. */}
       <Suspense fallback={null}>
         <Map
           onNavigate={handleNavigate}

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import CosmicBackground from './CosmicBackground';
 
 import './Schedule.css';
 
@@ -24,6 +25,16 @@ export default function Schedule() {
 
     return (
         <div className="schedule-page" ref={sectionRef}>
+
+            <div className="schedule-fixed-bg">
+                <CosmicBackground />
+            </div>
+            <img
+                src="/favicon-nobg.webp"
+                alt=""
+                className="schedule-fixed-watermark"
+                draggable={false}
+            />
 
 
 
