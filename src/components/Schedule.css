@@ -49,10 +49,12 @@
     font-weight: 400;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #fff;
-    text-shadow:
-        0 0 40px rgba(255, 255, 255, 0.15),
-        0 0 80px rgba(200, 210, 255, 0.08);
+    background: linear-gradient(to bottom, #fff, rgba(0, 210, 211, 0.8));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 40px rgba(0, 210, 211, 0.3));
     margin: 0;
     line-height: 1.1;
     text-align: center;
@@ -95,7 +97,7 @@
     font-weight: 600;
     letter-spacing: 0.5em;
     text-transform: uppercase;
-    color: #4dd8e6;
+    color: #00d2d3;
 }
 
 .schedule-coming-soon {
@@ -105,9 +107,11 @@
     letter-spacing: 0.08em;
     color: #fff;
     margin: 0;
-    text-shadow:
-        0 0 40px rgba(255, 255, 255, 0.12),
-        0 0 80px rgba(77, 216, 230, 0.06);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-image: linear-gradient(to bottom, #fff, rgba(0, 210, 211, 0.8));
+    filter: drop-shadow(0 0 40px rgba(0, 210, 211, 0.12));
 }
 
 .schedule-sub {

@@ -209,7 +209,7 @@ const EventSection = memo(function EventSection({ event }: { event: Event }) {
               {event.number}
             </span>
           </div>
-          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(2.8rem, 6vw, 5.5rem)", fontWeight: 700, color: "#ffffff", lineHeight: 1.05, letterSpacing: "0.04em", marginBottom: "1.2rem" }}>
+          <h2 className="major-events-event-title">
             {event.name}
           </h2>
           <div className="flex items-center gap-3 mb-6">
@@ -270,7 +270,7 @@ const EventSection = memo(function EventSection({ event }: { event: Event }) {
             <div style={{ width: "28px", height: "1px", backgroundColor: CYAN, opacity: 0.6 }} />
           </div>
 
-          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(2rem, 9vw, 3.5rem)", fontWeight: 700, color: "#ffffff", lineHeight: 1.05, letterSpacing: "0.06em", marginBottom: "1rem" }}>
+          <h2 className="major-events-event-title">
             {event.name}
           </h2>
 
@@ -313,7 +313,7 @@ export default function MajorEvents() {
           <div
             className="relative z-10 px-6 text-center"
           >
-            <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(2.8rem, 8vw, 6.5rem)", fontWeight: 400, color: "#ffffff", letterSpacing: "0.12em", marginBottom: "1.2rem", textShadow: "0 0 40px rgba(255,255,255,0.15), 0 0 80px rgba(200,210,255,0.08)" }}>
+            <h1 className="major-events-hero-title">
               MAJOR EVENTS
             </h1>
             <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(0.9rem, 2vw, 1.25rem)", fontWeight: 400, letterSpacing: "0.45em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", marginTop: "1rem" }}>
@@ -360,10 +360,9 @@ export default function MajorEvents() {
             GET INVOLVED
           </motion.p>
 
-          <motion.h2 initial={{ opacity: 0, y: 25 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.15 }}
-            style={{ fontFamily: "'Cinzel', serif", fontSize: "clamp(3rem, 8vw, 5.5rem)", fontWeight: 400, color: "#fff", letterSpacing: "0.1em", marginBottom: "1.5rem" }}>
+          <h2 className="major-events-dome-heading">
             Compete Now
-          </motion.h2>
+          </h2>
 
           <div style={{ width: "40px", height: "3px", background: CYAN, borderRadius: "2px", boxShadow: `0 0 10px ${CYAN}66`, marginBottom: "1.5rem" }} />
 
