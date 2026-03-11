@@ -147,8 +147,7 @@ export default function Team() {
             <section className="team-hero">
                 <div className="team-hero-content team-animate visible">
                     <h1 className="team-hero-title">
-                        <span className="title-layer-1">Meet The Team</span>
-                        <span className="title-layer-2">Meet The Team</span>
+                        Meet The Team
                     </h1>
                     <p className="team-hero-tagline">
                         THE VISIONARIES

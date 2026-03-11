@@ -38,28 +38,17 @@
     font-weight: 500;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    background: linear-gradient(to bottom, #fff, rgba(0, 210, 211, 0.8));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 40px rgba(0, 210, 211, 0.3));
     margin: 0;
     line-height: 1.1;
 }
 
-/* Duplicated text layered for a glowing chromatic aberration effect */
-.title-layer-1 {
-    display: block;
-    color: #fff;
-    text-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
-}
-
-.title-layer-2 {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    color: transparent;
-    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.4);
-    filter: drop-shadow(0 0 20px rgba(77, 216, 230, 0.4)) drop-shadow(0 0 40px rgba(232, 67, 147, 0.4));
-    mix-blend-mode: screen;
-    pointer-events: none;
-}
+/* Layers removed in favor of gradient style */
 
 .team-hero-tagline {
     font-family: 'Cormorant Garamond', serif;
@@ -75,8 +64,8 @@
     display: inline-block;
     margin: 0 1.2em;
     opacity: 0.4;
-    color: #4dd8e6;
-    text-shadow: 0 0 10px #4dd8e6;
+    color: #00d2d3;
+    text-shadow: 0 0 10px #00d2d3;
 }
 
 .team-hero-scroll {
@@ -95,7 +84,7 @@
 .team-hero-scroll-line {
     width: 1.5px;
     height: 45px;
-    background: linear-gradient(to bottom, rgba(232, 67, 147, 0.8), rgba(77, 216, 230, 0.6), transparent);
+    background: linear-gradient(to bottom, rgba(232, 67, 147, 0.8), rgba(0, 210, 211, 0.6), transparent);
     border-radius: 2px;
 }
 
@@ -162,7 +151,7 @@
     letter-spacing: 0.08em;
     color: #fff;
     margin: 0 0 1.5rem;
-    text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.1));
 }
 
 .team-divider {
@@ -494,25 +483,25 @@
 
 /* CYAN THEME (Co-Convenors) */
 .color-cyan .team-label {
-    color: #4dd8e6;
-    text-shadow: 0 0 15px rgba(77, 216, 230, 0.4);
+    color: #00d2d3;
+    text-shadow: 0 0 15px rgba(0, 210, 211, 0.4);
 }
 
 .color-cyan .team-divider {
-    background: #4dd8e6;
-    box-shadow: 0 0 15px rgba(77, 216, 230, 0.6);
+    background: #00d2d3;
+    box-shadow: 0 0 15px rgba(0, 210, 211, 0.6);
 }
 
 .color-cyan .team-card-border {
-    background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(77, 216, 230, 0.9), transparent 40%);
+    background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(0, 210, 211, 0.9), transparent 40%);
 }
 
 .color-cyan .team-card-glow {
-    background: radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), rgba(77, 216, 230, 0.15), transparent 40%);
+    background: radial-gradient(500px circle at var(--mouse-x) var(--mouse-y), rgba(0, 210, 211, 0.15), transparent 40%);
 }
 
 .color-cyan .team-avatar-ring {
-    color: #4dd8e6;
+    color: #00d2d3;
 }
 
 .color-cyan .team-card-elite:hover .team-name {
@@ -520,8 +509,8 @@
 }
 
 .color-cyan .team-card-elite:hover .team-avatar-wrapper {
-    box-shadow: 0 0 30px rgba(77, 216, 230, 0.4);
-    border-color: rgba(77, 216, 230, 0.5);
+    box-shadow: 0 0 30px rgba(0, 210, 211, 0.4);
+    border-color: rgba(0, 210, 211, 0.5);
 }
 
 .color-cyan .team-role-text {
@@ -529,8 +518,8 @@
 }
 
 .color-cyan .team-card-elite:hover .team-role-badge {
-    border-color: rgba(77, 216, 230, 0.4);
-    box-shadow: 0 0 20px rgba(77, 216, 230, 0.2);
+    border-color: rgba(0, 210, 211, 0.4);
+    box-shadow: 0 0 20px rgba(0, 210, 211, 0.2);
 }
 
 /* PURPLE THEME (Organising Secretaries) */

@@ -3,6 +3,7 @@ import './TeleportBar.css';
 
 const TELEPORT_TARGETS = [
     { page: 'about', label: 'About', color: '#00ffee' },
+    { page: 'dome-portal', label: 'ono-exp', color: '#7c8cff' },
     { page: 'major-events', label: 'Major Events', color: '#ff6ef9' },
     { page: 'minor-events', label: 'Minor Events', color: '#cc44ff' },
     { page: 'artist', label: 'Artist', color: '#ffcc00' },
