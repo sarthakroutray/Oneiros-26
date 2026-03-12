@@ -48,7 +48,7 @@ export default function Sponsors() {
             {/* ── LOWER SECTIONS ───────────────────────────────────────── */}
             <div className="sponsors-lower-wrapper">
 
-                {/* ── COMING SOON SECTION ─────────────────────────────── */}
+                {/* ── CURRENT SPONSORS SECTION ─────────────────────────────── */}
                 <section className="sponsors-content">
                     <div className="sponsors-content-inner">
                         <p className="sponsors-label sponsors-animate sponsors-animate-delay-1">
@@ -60,52 +60,82 @@ export default function Sponsors() {
                         </h2>
 
                         <p className="sponsors-subheading sponsors-animate sponsors-animate-delay-3">
-                            Something great is coming
+                            The visionaries who make it possible
                         </p>
+                    </div>
 
-                        <h2 className="sponsors-coming-soon sponsors-animate sponsors-animate-delay-4">
-                            Coming Soon
-                        </h2>
-
-                        <p className="sponsors-coming-soon-sub sponsors-animate sponsors-animate-delay-5">
-                            Our 2026 sponsors will be revealed here. Stay tuned.
-                        </p>
-
-                        <div className="sponsors-dots sponsors-animate sponsors-animate-delay-5">
-                            <span className="sponsors-dot sponsors-dot--pink" />
-                            <span className="sponsors-dot sponsors-dot--cyan" />
-                            <span className="sponsors-dot sponsors-dot--cyan" />
+                    <div className="sponsors-grid sponsors-animate sponsors-animate-delay-4">
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/insurance.webp" alt="Insurance Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Insurance Partner</p>
+                            </div>
                         </div>
-                    </div>
-                </section>
 
-                {/* ── PREVIOUS SPONSORS SECTION ──────────────────────── */}
-                <section className="sponsors-previous">
-                    <div className="sponsors-content-inner">
-                        <p className="sponsors-label sponsors-animate sponsors-animate-delay-1">
-                            LEGACY
-                        </p>
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/foodandbeveragebp.webp" alt="Food & Beverage Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Food & Beverage Partner</p>
+                            </div>
+                        </div>
 
-                        <h2 className="sponsors-heading sponsors-animate sponsors-animate-delay-2">
-                            Previous Sponsors
-                        </h2>
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/hospitality.webp" alt="Hospitality Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Hospitality Partner</p>
+                            </div>
+                        </div>
 
-                        <p className="sponsors-subheading sponsors-animate sponsors-animate-delay-3">
-                            Those who believed in us before
-                        </p>
-                    </div>
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/accomodation.webp" alt="Accommodation Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Accommodation Partner</p>
+                            </div>
+                        </div>
 
-                    <div className="sponsors-image-wrap sponsors-animate sponsors-animate-delay-4">
-                        <img
-                            src="/previousSponsors.webp"
-                            alt="Previous Sponsors of Oneiros"
-                            className="sponsors-prev-image"
-                            loading="lazy"
-                            decoding="async"
-                            width="800"
-                            height="400"
-                        />
-                        <div className="sponsors-image-glow" />
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/design.webp" alt="Design Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Design Partner</p>
+                            </div>
+                        </div>
+
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/fabric.webp" alt="Fabric Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Fabric Partner</p>
+                            </div>
+                        </div>
+
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/festival.webp" alt="Festival Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Festival Partner</p>
+                            </div>
+                        </div>
+
+                        <div className="sponsor-item">
+                            <div className="sponsor-image-wrap">
+                                <img src="/sponsors/smartphone.webp" alt="Smartphone Partner" className="sponsor-logo" loading="lazy" />
+                            </div>
+                            <div className="sponsor-info">
+                                <p className="sponsor-type">Smartphone Partner</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
