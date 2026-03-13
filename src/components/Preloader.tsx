@@ -33,6 +33,8 @@ export default function Preloader({ onComplete }: PreloaderProps) {
     const startTimeRef = useRef(performance.now());
     const initializedRef = useRef(false);
 
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
     useEffect(() => {
         const video = videoRef.current;
         const bar = barRef.current;
@@ -44,8 +46,28 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         if (staticPreloader) staticPreloader.remove();
 
         if (!initializedRef.current) {
-            video.playbackRate = 1.2;
-            video.play().catch(err => console.warn('Autoplay prevented:', err));
+            // Safari is stricter with autoplay. Set required flags at runtime too.
+            video.muted = true;
+            video.defaultMuted = true;
+            video.playsInline = true;
+            video.setAttribute('muted', '');
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', 'true');
+            video.preload = 'auto';
+
+            const desiredPlaybackRate = isSafari ? 1 : 1.2;
+            const tryPlay = () => {
+                video.playbackRate = desiredPlaybackRate;
+                video.play().catch(err => console.warn('Autoplay prevented:', err));
+            };
+
+            // Ensure Safari has enough metadata before play attempt.
+            if (video.readyState >= 1) {
+                tryPlay();
+            } else {
+                video.addEventListener('loadedmetadata', tryPlay, { once: true });
+                video.load();
+            }
             initializedRef.current = true;
         }
 
@@ -99,7 +121,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
                 autoPlay
                 muted
                 playsInline
-                preload="metadata"
+                preload="auto"
                 onEnded={handleComplete}
                 className="preloader-video"
                 aria-label="Oneiros 2026 introduction animation"

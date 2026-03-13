@@ -36,6 +36,14 @@
     contain: paint;
 }
 
+/* Safari can drop blended video frames; use a safer render path there. */
+@supports (-webkit-touch-callout: none) {
+    .preloader-video {
+        mix-blend-mode: normal;
+        opacity: 0.95;
+    }
+}
+
 /* Mobile specific styling adjustments */
 @media (max-width: 768px) {
     .preloader-video {

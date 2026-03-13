@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import './Navbar.css';
 
 interface NavbarProps {
@@ -8,6 +8,25 @@ interface NavbarProps {
 export default function Navbar({ onNavigate }: NavbarProps) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const navMenuId = 'primary-navigation';
+
+    useEffect(() => {
+        const root = document.documentElement;
+        const body = document.body;
+        const className = 'mobile-nav-open';
+
+        if (isMobileMenuOpen) {
+            root.classList.add(className);
+            body.classList.add(className);
+        } else {
+            root.classList.remove(className);
+            body.classList.remove(className);
+        }
+
+        return () => {
+            root.classList.remove(className);
+            body.classList.remove(className);
+        };
+    }, [isMobileMenuOpen]);
 
     const toggleMobileMenu = useCallback(() => {
         setIsMobileMenuOpen(prev => !prev);
